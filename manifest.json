@@ -1,0 +1,21 @@
+{
+  "name": "SI-SERAH DESA - Kuitansi & BAST Kas Desa",
+  "short_name": "Si-Serah",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#1e3a8a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192' fill='%231e3a8a'><rect width='192' height='192' rx='36' fill='%231e3a8a'/><path d='M96 36L44 60v44c0 33.6 22.2 65 52 72 29.8-7 52-38.4 52-72V60l-52-24zm-8 96l-24-24 11.3-11.3L88 109.4l44.7-44.7L144 76l-56 56z' fill='%23ffffff'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='%231e3a8a'><rect width='512' height='512' rx='96' fill='%231e3a8a'/><path d='M256 96L117 160v117c0 89.6 59.2 173.3 139 192 79.8-18.7 139-102.4 139-192V160L256 96zm-21.3 256L170.7 288l30.1-30.1 33.9 33.9 119.2-119.2 30.1 30.1-149.3 149.3z' fill='%23ffffff'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

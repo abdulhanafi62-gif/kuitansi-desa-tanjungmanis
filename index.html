@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e3a8a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>SI-SERAH DESA | Kuitansi & BAST Digital Dana Desa</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a8a'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/></svg>">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Top Header -->
+    <header class="app-header no-print">
+      <div class="header-content">
+        <div class="header-logo-area">
+          <div class="header-badge">SI-SERAH</div>
+          <div>
+            <h1 class="header-title">BAST & Kuitansi Kas Desa</h1>
+            <p class="header-subtitle" id="headerSubtitle">Desa Tanjung Manis, Kec. Sangkulirang</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="btnQuickBackup" class="btn-icon" title="Ekspor Cadangan Data">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          </button>
+        </div>
+      </div>
+      <!-- Notice Alert for Protection -->
+      <div class="protection-banner">
+        <span class="protection-icon">🛡️</span>
+        <span class="protection-text">Proteksi Kaur Keuangan: Catat foto, GPS & tanda tangan real-time sebagai alat bukti hukum sah.</span>
+      </div>
+    </header>
+
+    <!-- Main View Container -->
+    <main class="main-content">
+
+      <!-- ================= TAB 1: FORM INPUT SERAH TERIMA ================= -->
+      <section id="tab-form" class="tab-pane active no-print">
+        <div class="card form-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="badge-number">1</span>
+              <div>
+                <h2 class="card-title">Catat Penyerahan Uang</h2>
+                <p class="card-subtitle">Isi data saat uang tunai diserahkan ke pihak penerima</p>
+              </div>
+            </div>
+            <button type="button" id="btnAutoNo" class="btn-text-sm">Auto No. Bukti</button>
+          </div>
+
+          <form id="disbursementForm" autocomplete="off">
+            <!-- No. Bukti & Tanggal -->
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="noBukti">No. Bukti / BAST <span class="req">*</span></label>
+                <input type="text" id="noBukti" name="noBukti" required placeholder="BAST/001/TM/2026">
+              </div>
+              <div class="form-group">
+                <label for="tanggal">Tanggal & Jam Penyerahan <span class="req">*</span></label>
+                <input type="datetime-local" id="tanggal" name="tanggal" required>
+              </div>
+            </div>
+
+            <!-- GPS Lokasi Penyerahan -->
+            <div class="form-group gps-group">
+              <label>Koordinat Lokasi Penyerahan (GPS)</label>
+              <div class="gps-control">
+                <input type="text" id="lokasiKoordinat" name="lokasiKoordinat" readonly placeholder="Menunggu deteksi GPS...">
+                <button type="button" id="btnGetLocation" class="btn-secondary btn-sm">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+                  Ambil GPS
+                </button>
+              </div>
+              <small class="help-text" id="gpsStatus">Otomatis mencatat titik lintang & bujur tempat Anda menyerahkan uang.</small>
+            </div>
+
+            <hr class="form-divider">
+
+            <!-- Data Penerima -->
+            <div class="section-title">
+              <span>👤 Data Pihak Penerima Uang</span>
+            </div>
+
+            <div class="form-group">
+              <label for="penerimaJabatan">Pihak / Jabatan Penerima <span class="req">*</span></label>
+              <select id="penerimaJabatan" name="penerimaJabatan" required>
+                <option value="">-- Pilih Pihak Penerima --</option>
+                <option value="Kepala Desa">Kepala Desa (Kades)</option>
+                <option value="Badan Permusyawaratan Desa (BPD)">Pengurus / Anggota BPD</option>
+                <option value="Pelaksana Kegiatan Anggaran (PKA)">Pelaksana Kegiatan Anggaran (PKA / Kasi / Kaur)</option>
+                <option value="Tim Pelaksana Kegiatan (TPK)">Tim Pelaksana Kegiatan (TPK Fisik)</option>
+                <option value="Lembaga Pemberdayaan Masyarakat (LPM)">LPM / Karang Taruna / PKK</option>
+                <option value="Pihak Ketiga / Rekanan / Penyedia">Pihak Ketiga / Rekanan / Toko</option>
+                <option value="Penerima Manfaat Langsung">Penerima Manfaat Langsung (BLT-DD / Honor)</option>
+                <option value="Lainnya">Lainnya (Tulis Manual)</option>
+              </select>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="penerimaNama">Nama Lengkap Penerima <span class="req">*</span></label>
+                <input type="text" id="penerimaNama" name="penerimaNama" required placeholder="Contoh: Bpk. H. Ahmad (Kades)">
+              </div>
+              <div class="form-group">
+                <label for="penerimaKontak">No. HP / WhatsApp (Opsional)</label>
+                <input type="tel" id="penerimaKontak" name="penerimaKontak" placeholder="08xxxxxxxxxx">
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <!-- Rincian Dana -->
+            <div class="section-title">
+              <span>💰 Rincian Anggaran & Keperluan</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="sumberDana">Sumber Dana APBDes <span class="req">*</span></label>
+                <select id="sumberDana" name="sumberDana" required>
+                  <option value="DDS (Dana Desa)">DDS (Dana Desa / APBN)</option>
+                  <option value="ADD (Alokasi Dana Desa)">ADD (Alokasi Dana Desa / APBD)</option>
+                  <option value="PBH (Bagi Hasil Pajak & Retribusi)">PBH (Bagi Hasil Pajak & Retribusi)</option>
+                  <option value="PADes (Pendapatan Asli Desa)">PADes (Pendapatan Asli Desa)</option>
+                  <option value="Bantuan Keuangan Provinsi/Kabupaten">Bantuan Keuangan Provinsi / Kab</option>
+                  <option value="SiLPA (Sisa Lebih Perhitungan Anggaran)">SiLPA Tahun Sebelumnya</option>
+                  <option value="Pendapatan Lain-lain Sah">Pendapatan Lain-lain Sah</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="bidangKegiatan">Bidang APBDes <span class="req">*</span></label>
+                <select id="bidangKegiatan" name="bidangKegiatan" required>
+                  <option value="Bidang 1: Penyelenggaraan Pemerintahan Desa">Bidang 1: Operasional / Pemdes</option>
+                  <option value="Bidang 2: Pelaksanaan Pembangunan Desa">Bidang 2: Pembangunan / Fisik</option>
+                  <option value="Bidang 3: Pembinaan Kemasyarakatan Desa">Bidang 3: Pembinaan Kemasyarakatan</option>
+                  <option value="Bidang 4: Pemberdayaan Masyarakat Desa">Bidang 4: Pemberdayaan Masyarakat</option>
+                  <option value="Bidang 5: Penanggulangan Bencana & Darurat">Bidang 5: Bencana / Darurat / BLT</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="jumlahUang">Jumlah Uang (Nominal Rp) <span class="req">*</span></label>
+              <div class="input-currency">
+                <span class="currency-prefix">Rp</span>
+                <input type="text" id="jumlahUang" name="jumlahUang" required placeholder="0" class="input-lg">
+              </div>
+              <div class="terbilang-box" id="terbilangBox">
+                <em>Terbilang: Nol Rupiah</em>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="uraianKeperluan">Uraian / Untuk Keperluan Kegiatan <span class="req">*</span></label>
+              <textarea id="uraianKeperluan" name="uraianKeperluan" rows="3" required placeholder="Contoh: Penyerahan uang tunai untuk Biaya Operasional Pemdes Bulan November 2026 / Operasional BPD / Bahan Pembangunan Posyandu"></textarea>
+            </div>
+
+            <!-- Catatan Khusus Pengaman Kaur Keuangan -->
+            <div class="form-group highlight-box">
+              <label for="catatanKaur">⚠️ Catatan Kronologis / Klausul Pengaman Kaur (PENTING)</label>
+              <textarea id="catatanKaur" name="catatanKaur" rows="2" placeholder="Contoh: Dana diserahkan langsung secara tunai atas permintaan Kepala Desa di Ruang Kerja Kades sebelum SPJ definitif diajukan oleh PKA."></textarea>
+              <small class="help-text">Catatan ini akan tertulis di Berita Acara sebagai bukti faktual siapa yang meminta dan memegang fisik uangnya.</small>
+            </div>
+
+            <hr class="form-divider">
+
+            <!-- FOTO BUKTI SERAH TERIMA -->
+            <div class="section-title">
+              <span>📸 Foto Bukti Fisik Serah Terima</span>
+            </div>
+
+            <div class="form-group">
+              <label>Ambil Foto Penyerahan Uang / Penerima <span class="req">*</span></label>
+              <div class="photo-capture-area">
+                <div class="photo-preview-wrap" id="photoPreviewWrap">
+                  <div class="photo-placeholder" id="photoPlaceholder">
+                    <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor"><path d="M12 12m-3.2 0a3.2 3.2 0 1 0 6.4 0 3.2 3.2 0 1 0 -6.4 0M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                    <p>Belum ada foto</p>
+                  </div>
+                  <img id="photoPreview" alt="Bukti Serah Terima" class="photo-img hidden">
+                </div>
+
+                <div class="photo-btn-row">
+                  <label for="cameraInput" class="btn-primary btn-sm btn-camera">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 12m-3.2 0a3.2 3.2 0 1 0 6.4 0 3.2 3.2 0 1 0 -6.4 0M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                    Buka Kamera HP
+                  </label>
+                  <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+
+                  <label for="galleryInput" class="btn-secondary btn-sm">
+                    Pilih File Foto
+                  </label>
+                  <input type="file" id="galleryInput" accept="image/*" class="hidden">
+
+                  <button type="button" id="btnHapusFoto" class="btn-danger-outline btn-sm hidden">Hapus Foto</button>
+                </div>
+              </div>
+              <small class="help-text">Sistem otomatis memberi stempel (watermark) tanggal, jam, nominal, dan koordinat GPS pada foto agar tidak bisa dipalsukan.</small>
+            </div>
+
+            <hr class="form-divider">
+
+            <!-- TANDA TANGAN DIGITAL -->
+            <div class="section-title">
+              <span>✍️ Tanda Tangan Penerima di Layar HP</span>
+            </div>
+
+            <div class="form-group">
+              <label>Tanda Tangan Pihak Penerima (Gunakan Jari / Stylus) <span class="req">*</span></label>
+              <div class="signature-container">
+                <canvas id="signatureCanvas" class="sig-canvas" width="400" height="180"></canvas>
+                <div class="sig-toolbar">
+                  <span class="sig-hint">Tanda tangani di dalam kotak putih</span>
+                  <button type="button" id="btnClearSig" class="btn-text-sm">Ulangi / Bersihkan</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="disclaimer-agreement">
+              <label class="checkbox-label">
+                <input type="checkbox" id="checkLegalAgreement" required checked>
+                <span><strong>Klausul Tanggung Jawab:</strong> Penerima bertanggung jawab penuh secara yuridis dan material atas fisik uang yang diterima serta kewajiban SPJ sesuai peraturan perundangan.</span>
+              </label>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions-sticky">
+              <button type="submit" id="btnSimpan" class="btn-primary btn-block btn-lg">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                SIMPAN & BUAT BUKTI KUITANSI
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: RIWAYAT & BUKTI CATATAN ================= -->
+      <section id="tab-records" class="tab-pane no-print">
+        <div class="card records-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Buku Kas & Riwayat Serah Terima</h2>
+              <p class="card-subtitle">Semua catatan transaksi & pegangan aman Kaur Keuangan</p>
+            </div>
+            <div class="header-tools">
+              <button id="btnExportCsv" class="btn-secondary btn-sm" title="Download Excel / CSV">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Ekspor Excel
+              </button>
+            </div>
+          </div>
+
+          <!-- Total Ringkasan Box -->
+          <div class="summary-cards-row">
+            <div class="summary-card">
+              <div class="summary-label">Total Transaksi</div>
+              <div class="summary-val" id="sumTotalCount">0 Data</div>
+            </div>
+            <div class="summary-card summary-highlight">
+              <div class="summary-label">Total Dana Diserahkan</div>
+              <div class="summary-val" id="sumTotalAmount">Rp 0</div>
+            </div>
+          </div>
+
+          <!-- Filter & Search -->
+          <div class="filter-bar">
+            <input type="text" id="searchInput" placeholder="Cari nama penerima, no bukti, kegiatan..." class="search-input">
+            <select id="filterPihak" class="filter-select">
+              <option value="ALL">Semua Pihak Penerima</option>
+              <option value="Kepala Desa">Kepala Desa (Kades)</option>
+              <option value="Badan Permusyawaratan Desa (BPD)">BPD</option>
+              <option value="Pelaksana Kegiatan Anggaran (PKA)">PKA / Kasi / Kaur</option>
+              <option value="Tim Pelaksana Kegiatan (TPK)">TPK</option>
+              <option value="Lainnya">Pihak Lain</option>
+            </select>
+          </div>
+
+          <!-- Records List Container -->
+          <div id="recordsList" class="records-list">
+            <!-- List items injected via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: REKAPITULASI PIHAK & AUDIT ================= -->
+      <section id="tab-audit" class="tab-pane no-print">
+        <div class="card audit-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Rekapitulasi Penerima Dana</h2>
+              <p class="card-subtitle">Pemetaan total uang yang diambil Kades, BPD, dan PKA</p>
+            </div>
+          </div>
+
+          <div class="alert-info-box">
+            <strong>Analisis Pengamanan Kaur:</strong> Pantau akumulasi dana yang diserahkan langsung ke Kepala Desa atau BPD agar Anda memiliki rekap total jika sewaktu-waktu ada pemeriksaan atau klarifikasi.
+          </div>
+
+          <div id="rekapByPihakContainer" class="rekap-container">
+            <!-- Dynamically populated -->
+          </div>
+
+          <div class="section-title mt-4">
+            <span>📊 Rekapitulasi Berdasarkan Sumber Dana</span>
+          </div>
+          <div id="rekapBySumberContainer" class="rekap-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: PENGATURAN & PROFIL DESA ================= -->
+      <section id="tab-settings" class="tab-pane no-print">
+        <div class="card settings-card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Profil Desa & Data Kaur</h2>
+              <p class="card-subtitle">Data ini akan tercantum di Kop Kuitansi & Dokumen Berita Acara</p>
+            </div>
+          </div>
+
+          <form id="settingsForm">
+            <div class="form-group">
+              <label for="setNamaDesa">Nama Desa</label>
+              <input type="text" id="setNamaDesa" value="Tanjung Manis">
+            </div>
+
+            <div class="form-group">
+              <label for="setKecamatan">Kecamatan</label>
+              <input type="text" id="setKecamatan" value="Sangkulirang">
+            </div>
+
+            <div class="form-group">
+              <label for="setKabupaten">Kabupaten / Kota</label>
+              <input type="text" id="setKabupaten" value="Kutai Timur">
+            </div>
+
+            <div class="form-group">
+              <label for="setProvinsi">Provinsi</label>
+              <input type="text" id="setProvinsi" value="Kalimantan Timur">
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="form-group">
+              <label for="setNamaKaur">Nama Kaur Keuangan (Pemberi Uang / Anda)</label>
+              <input type="text" id="setNamaKaur" placeholder="Nama Anda" value="">
+            </div>
+
+            <div class="form-group">
+              <label for="setKadesNamaDefault">Nama Kepala Desa Saat Ini</label>
+              <input type="text" id="setKadesNamaDefault" placeholder="Nama Kepala Desa Tanjung Manis" value="">
+            </div>
+
+            <div class="form-group">
+              <button type="submit" class="btn-primary btn-block">Simpan Profil Desa</button>
+            </div>
+          </form>
+
+          <hr class="form-divider">
+
+          <div class="backup-actions">
+            <h3>Pusat Cadangan & Pemulihan (Backup)</h3>
+            <p class="text-muted">Semua foto dan data tersimpan aman di HP Anda secara offline. Lakukan backup berkala ke Google Drive / WhatsApp Anda.</p>
+            <div class="btn-group-stacked">
+              <button type="button" id="btnDownloadBackupJson" class="btn-secondary btn-block">
+                💾 Download File Backup Lengkap (.json)
+              </button>
+              <label for="restoreFileInput" class="btn-outline btn-block text-center cursor-pointer">
+                📂 Pulihkan Data dari File Cadangan
+              </label>
+              <input type="file" id="restoreFileInput" accept=".json" class="hidden">
+              <button type="button" id="btnResetAllData" class="btn-danger-outline btn-block btn-sm">
+                ⚠️ Kosongkan Semua Data di HP
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= MODAL / VIEW KUITANSI & BAST SIAP CETAK ================= -->
+      <div id="kuitansiModal" class="modal-overlay hidden">
+        <div class="modal-dialog">
+          <div class="modal-header no-print">
+            <h3 class="modal-title">Dokumen Berita Acara & Kuitansi</h3>
+            <div class="modal-header-actions">
+              <button type="button" id="btnShareWa" class="btn-success-sm" title="Kirim Teks ke WhatsApp">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16.75 13.96c.25.13.41.2.46.3.06.11.04.61-.21 1.18-.2.56-1.24 1.1-1.7 1.12-.46.02-.47.36-2.96-.73-2.49-1.09-3.99-3.75-4.11-3.92-.12-.17-.99-1.38-.99-2.63 0-1.25.62-1.87.85-2.12.23-.25.5-.31.67-.31.17 0 .33 0 .48.01.15.01.35-.06.55.43.2.49.69 1.76.75 1.89.06.13.1.28.02.45-.09.17-.13.27-.27.42-.14.15-.29.33-.42.45-.14.13-.29.27-.12.56.17.29.74 1.25 1.59 2.02 1.09.98 2.01 1.28 2.3 1.42.29.14.46.12.63-.08.17-.2.74-.87.94-1.17.2-.3.4-.25.67-.15zM12 2C6.48 2 2 6.48 2 12c0 1.82.49 3.53 1.34 5L2 22l5.14-1.32c1.43.78 3.06 1.23 4.86 1.23 5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                Kirim WA
+              </button>
+              <button type="button" id="btnPrintKuitansi" class="btn-primary-sm">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                Cetak / PDF
+              </button>
+              <button type="button" id="btnCloseModal" class="btn-close">&times;</button>
+            </div>
+          </div>
+
+          <!-- The Official Printed Document Paper -->
+          <div class="modal-body">
+            <div id="printableDocument" class="printable-paper">
+              <!-- Official Kop Surat Desa -->
+              <div class="doc-kop">
+                <div class="doc-kop-text">
+                  <h3 class="kop-kab">PEMERINTAH KABUPATEN KUTAI TIMUR</h3>
+                  <h3 class="kop-kec">KECAMATAN SANGKULIRANG</h3>
+                  <h2 class="kop-desa" id="docDesaTitle">PEMERINTAH DESA TANJUNG MANIS</h2>
+                  <p class="kop-alamat" id="docDesaAlamat">Alamat: Kantor Desa Tanjung Manis, Kec. Sangkulirang, Kab. Kutai Timur - Kaltim</p>
+                </div>
+                <div class="doc-kop-line"></div>
+              </div>
+
+              <!-- Judul Dokumen -->
+              <div class="doc-title-block">
+                <h4 class="doc-title">BERITA ACARA & KUITANSI SERAH TERIMA KAS DESA</h4>
+                <div class="doc-no" id="docNoBukti">Nomor: BAST/001/TM/2026</div>
+              </div>
+
+              <!-- Narasi Pembuka -->
+              <p class="doc-narasi">
+                Pada hari ini, <strong id="docHariTanggal">Jumat, 06 November 2026</strong>, bertempat di <span id="docTempat">Kantor Desa Tanjung Manis</span>, telah dilakukan penyerahan fisik uang kas APBDes oleh Kaur Keuangan Desa Tanjung Manis kepada Pihak Penerima dengan rincian sebagai berikut:
+              </p>
+
+              <!-- Tabel Rincian -->
+              <table class="doc-table">
+                <tr>
+                  <td class="col-lbl">1. Pihak Yang Menerima</td>
+                  <td class="col-sep">:</td>
+                  <td><strong id="docPenerimaNama">-</strong></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">2. Jabatan / Kedudukan</td>
+                  <td class="col-sep">:</td>
+                  <td><span id="docPenerimaJabatan">-</span></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">3. Sumber Dana APBDes</td>
+                  <td class="col-sep">:</td>
+                  <td><strong id="docSumberDana">-</strong></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">4. Bidang / Sub Bidang</td>
+                  <td class="col-sep">:</td>
+                  <td><span id="docBidangKegiatan">-</span></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">5. Uraian Keperluan</td>
+                  <td class="col-sep">:</td>
+                  <td><span id="docUraian">-</span></td>
+                </tr>
+                <tr class="row-highlight">
+                  <td class="col-lbl">6. JUMLAH NOMINAL</td>
+                  <td class="col-sep">:</td>
+                  <td><span class="doc-nominal-big" id="docNominal">Rp 0</span></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">7. Terbilang</td>
+                  <td class="col-sep">:</td>
+                  <td><em id="docTerbilang" class="doc-terbilang-text">Nol Rupiah</em></td>
+                </tr>
+                <tr id="rowCatatanKaur">
+                  <td class="col-lbl">8. Catatan Fakta Serah Terima</td>
+                  <td class="col-sep">:</td>
+                  <td><span id="docCatatanFakta" class="doc-fakta">-</span></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">9. Titik Koordinat GPS</td>
+                  <td class="col-sep">:</td>
+                  <td><span id="docGpsCoord" class="coord-tag">-</span></td>
+                </tr>
+                <tr>
+                  <td class="col-lbl">10. Segel Digital Forensik</td>
+                  <td class="col-sep">:</td>
+                  <td><span id="docDigitalHash" class="hash-tag">SHA-256: Verifying...</span></td>
+                </tr>
+              </table>
+
+              <!-- Klausul Hukum Tanggung Jawab Mutlak -->
+              <div class="doc-klausul">
+                <strong>PERNYATAAN TANGGUNG JAWAB MUTLAK:</strong>
+                <p>
+                  Dengan ditandatanganinya Berita Acara ini, Pihak Penerima menyatakan telah menerima fisik uang tunai dalam jumlah penuh sebagaimana tercantum di atas, dan <u>bertanggung jawab mutlak</u> baik secara yuridis, administratif, maupun keuangan atas penggunaan dana tersebut serta wajib menyelesaikan kelengkapan bukti SPJ (Surat Pertanggungjawaban) sesuai ketentuan peraturan perundang-undangan tentang Keuangan Desa.
+                </p>
+              </div>
+
+              <!-- Foto Eviden Fisik -->
+              <div class="doc-eviden-block">
+                <div class="eviden-header">DOKUMENTASI / EVIDEN FISIK PENYERAHAN REAL-TIME:</div>
+                <div class="eviden-photo-container">
+                  <img id="docFotoEviden" class="doc-foto-img" alt="Foto Bukti Penyerahan">
+                </div>
+              </div>
+
+              <!-- Tanda Tangan Para Pihak -->
+              <div class="doc-signatures">
+                <div class="sig-box">
+                  <p class="sig-role">Pihak Yang Menyerahkan,<br><strong>Kaur Keuangan Desa Tanjung Manis</strong></p>
+                  <div class="sig-space">
+                    <span class="sig-stamp-text">TELAH DISERAHKAN TUNAI</span>
+                  </div>
+                  <p class="sig-name" id="docSignKaurNama">( ........................................ )</p>
+                </div>
+
+                <div class="sig-box">
+                  <p class="sig-role">Pihak Yang Menerima,<br><span id="docSignPenerimaJabatan">Penerima Uang</span></p>
+                  <div class="sig-space-recipient">
+                    <img id="docSignRecipientImg" class="sig-recipient-img hidden" alt="Tanda Tangan Penerima">
+                    <div id="docSignPlaceholder" class="sig-placeholder-line"></div>
+                  </div>
+                  <p class="sig-name" id="docSignPenerimaNama">( ........................................ )</p>
+                </div>
+              </div>
+
+              <!-- Footer Dokumen -->
+              <div class="doc-footer">
+                <span>Dokumen Sah Administrasi Keuangan Desa | Geotag & Digital Signature Verified</span>
+                <span id="docGeneratedTime">Dicetak: -</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Mobile Friendly) -->
+    <nav class="bottom-nav no-print">
+      <button class="nav-item active" data-tab="tab-form">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <span>Serah Uang</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-records">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        <span>Riwayat</span>
+        <span class="badge-count" id="badgeCount">0</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-audit">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        <span>Rekapitulasi</span>
+      </button>
+
+      <button class="nav-item" data-tab="tab-settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        <span>Profil</span>
+      </button>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

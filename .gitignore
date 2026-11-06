@@ -1,0 +1,14 @@
+# Android build & cache
+.gradle/
+build/
+*/build/
+*.apk
+*.aab
+build-output/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local backup archives
+*.zip

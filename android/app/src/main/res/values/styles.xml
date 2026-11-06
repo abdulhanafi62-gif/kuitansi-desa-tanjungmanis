@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.SiSerahDesa" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#1E3A8A</item>
+        <item name="colorPrimaryDark">#172554</item>
+        <item name="colorAccent">#059669</item>
+        <item name="android:statusBarColor">#1E3A8A</item>
+    </style>
+</resources>
