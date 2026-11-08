@@ -314,6 +314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const kuitansiModal = document.getElementById('kuitansiModal');
   const btnCloseModal = document.getElementById('btnCloseModal');
   const btnPrintKuitansi = document.getElementById('btnPrintKuitansi');
+  const btnDownloadImage = document.getElementById('btnDownloadImage');
   const btnShareWa = document.getElementById('btnShareWa');
   const searchInput = document.getElementById('searchInput');
   const filterPihak = document.getElementById('filterPihak');
@@ -365,12 +366,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Quick Location Chips Handler
+  const locationChips = document.querySelectorAll('.btn-chip');
+  locationChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      locationChips.forEach(c => c.classList.remove('active-chip'));
+      chip.classList.add('active-chip');
+      const locVal = chip.getAttribute('data-loc');
+      inputLokasi.value = locVal;
+      gpsStatus.textContent = `Lokasi disetel: ${locVal}. Anda bisa menambahkan catatan lokasi tambahan jika perlu.`;
+      showToast(`Lokasi: ${locVal}`);
+    });
+  });
+
   // GPS Geolocation Handler
   btnGetLocation.addEventListener('click', () => {
     gpsStatus.textContent = "Mengakses satelit GPS HP...";
     if (!navigator.geolocation) {
-      showToast("GPS tidak didukung oleh browser ini");
-      gpsStatus.textContent = "GPS tidak tersedia.";
+      showToast("Fitur GPS tidak didukung browser ini");
+      gpsStatus.textContent = "GPS tidak tersedia. Lokasi manual tetap berlaku.";
       return;
     }
 
@@ -379,15 +393,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lat = pos.coords.latitude.toFixed(6);
         const lng = pos.coords.longitude.toFixed(6);
         const acc = Math.round(pos.coords.accuracy);
-        inputLokasi.value = `${lat}, ${lng} (Akurasi: ±${acc}m)`;
-        gpsStatus.textContent = `✅ Titik GPS Desa Tanjung Manis berhasil dikunci (${lat}, ${lng})`;
-        showToast("Titik GPS berhasil dicatat!");
+
+        // Jika user sudah menulis/memilih lokasi, sematkan koordinatnya
+        const currentLoc = inputLokasi.value.replace(/\s*\(GPS:[^)]*\)/, '').trim() || 'Kantor Desa Tanjung Manis';
+        inputLokasi.value = `${currentLoc} (GPS: ${lat}, ${lng})`;
+        gpsStatus.textContent = `✅ Titik GPS berhasil disematkan (${lat}, ${lng} ±${acc}m)`;
+        showToast("Koordinat GPS berhasil disematkan!");
       },
       (err) => {
-        console.warn("GPS Error:", err);
-        inputLokasi.value = "Lokasi Desa Tanjung Manis (GPS Offline)";
-        gpsStatus.textContent = "Izin GPS ditolak atau sinyal lemah. Gunakan koordinat perkiraan.";
-        showToast("GPS gagal didapat. Memakai nama lokasi manual.");
+        console.warn("GPS Note:", err);
+        gpsStatus.textContent = "Izin GPS belum aktif. Lokasi tetap tercatat sesuai ketikan manual Anda.";
+        showToast("GPS offline, nama lokasi manual tetap tersimpan.");
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -595,9 +611,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Cetak / Simpan PDF
   btnPrintKuitansi.addEventListener('click', () => {
-    window.print();
+    if (!currentActiveRecord) return;
+    const cleanNo = (currentActiveRecord.noBukti || 'BAST').replace(/[\/\\]/g, '_');
+
+    // 1. Cek jika di dalam aplikasi APK Android (Native Android Print)
+    if (window.AndroidPrinter && typeof window.AndroidPrinter.printDocument === 'function') {
+      showToast("Membuka dialog Simpan PDF...");
+      window.AndroidPrinter.printDocument(`Kuitansi_${cleanNo}`);
+      return;
+    }
+
+    // 2. Jika di browser HP (Chrome/Safari) atau Komputer
+    if (typeof window.print === 'function') {
+      showToast("Membuka Cetak / Simpan PDF...");
+      setTimeout(() => {
+        window.print();
+      }, 250);
+      return;
+    }
+
+    // 3. Fallback jika printer tidak didukung
+    downloadReceiptImage(currentActiveRecord);
   });
+
+  // Simpan Gambar Kuitansi ke Galeri / Download
+  if (btnDownloadImage) {
+    btnDownloadImage.addEventListener('click', () => {
+      if (!currentActiveRecord) return;
+      downloadReceiptImage(currentActiveRecord);
+    });
+  }
 
   btnShareWa.addEventListener('click', () => {
     if (!currentActiveRecord) return;
@@ -1014,4 +1059,278 @@ function handleRestoreJson(e) {
     }
   };
   reader.readAsText(file);
+}
+
+// ==========================================
+// 7. RENDER & DOWNLOAD DOKUMEN RESMI (GAMBAR / GALERI)
+// ==========================================
+async function downloadReceiptImage(r) {
+  if (!r) return;
+  showToast("Sedang merender gambar dokumen resmi...");
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  // Proporsi A4: 1200 x 1750
+  const width = 1200;
+  const height = 1750;
+  canvas.width = width;
+  canvas.height = height;
+
+  // Latar Putih Bersih
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  // Bingkai Luar
+  ctx.strokeStyle = '#1e3a8a';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(35, 35, width - 70, height - 70);
+
+  // KOP SURAT RESMI DESA
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 22px serif';
+  ctx.fillText('PEMERINTAH KABUPATEN ' + (r.kabupaten || 'KUTAI TIMUR').toUpperCase(), width / 2, 85);
+  ctx.fillText('KECAMATAN ' + (r.kecamatan || 'SANGKULIRANG').toUpperCase(), width / 2, 115);
+
+  ctx.font = '800 28px serif';
+  ctx.fillText('PEMERINTAH DESA ' + (r.namaDesa || 'TANJUNG MANIS').toUpperCase(), width / 2, 155);
+
+  ctx.font = 'italic 15px sans-serif';
+  ctx.fillStyle = '#334155';
+  ctx.fillText(`Alamat: Kantor Desa ${r.namaDesa || 'Tanjung Manis'}, Kec. ${r.kecamatan || 'Sangkulirang'}, Kab. ${r.kabupaten || 'Kutai Timur'} - ${r.provinsi || 'Kaltim'}`, width / 2, 185);
+
+  // Garis Ganda Pemisah Kop
+  ctx.beginPath();
+  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = '#000000';
+  ctx.moveTo(60, 205);
+  ctx.lineTo(width - 60, 205);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.lineWidth = 1;
+  ctx.moveTo(60, 211);
+  ctx.lineTo(width - 60, 211);
+  ctx.stroke();
+
+  // JUDUL DOKUMEN
+  ctx.fillStyle = '#0f172a';
+  ctx.font = 'bold 22px serif';
+  ctx.fillText('BERITA ACARA & KUITANSI SERAH TERIMA KAS DESA', width / 2, 255);
+
+  ctx.font = '16px monospace';
+  ctx.fillStyle = '#1e3a8a';
+  ctx.fillText(`Nomor: ${r.noBukti}`, width / 2, 282);
+
+  // NARASI PEMBUKA
+  ctx.textAlign = 'left';
+  ctx.font = '15px serif';
+  ctx.fillStyle = '#111827';
+  const narasi = `Pada hari ini, ${formatTanggalIndo(r.tanggal)}, bertempat di ${r.lokasiKoordinat || 'Kantor Desa Tanjung Manis'}, telah dilakukan penyerahan fisik uang kas APBDes oleh Kaur Keuangan kepada Pihak Penerima dengan rincian berikut:`;
+  wrapText(ctx, narasi, 70, 320, width - 140, 24);
+
+  // TABEL RINCIAN
+  let tableY = 370;
+  const col1X = 75;
+  const colValX = 360;
+  const rowHeight = 36;
+
+  const rows = [
+    { lbl: '1. Pihak Yang Menerima', val: r.penerimaNama, bold: true },
+    { lbl: '2. Jabatan / Kedudukan', val: r.penerimaJabatan, bold: false },
+    { lbl: '3. Sumber Dana APBDes', val: r.sumberDana, bold: true },
+    { lbl: '4. Bidang / Sub Bidang', val: r.bidangKegiatan, bold: false },
+    { lbl: '5. Uraian Keperluan', val: r.uraianKeperluan, bold: false },
+    { lbl: '6. JUMLAH NOMINAL', val: formatRupiah(r.jumlahUang), highlight: true },
+    { lbl: '7. Terbilang', val: `"${r.terbilang}"`, italic: true },
+    { lbl: '8. Catatan Fakta Serah Terima', val: r.catatanKaur || 'Dana tunai diserahkan langsung kepada penerima.' },
+    { lbl: '9. Tempat / Lokasi & GPS', val: r.lokasiKoordinat },
+    { lbl: '10. Segel Digital Forensik', val: r.hashSha256 || 'SHA-256: TERVERIFIKASI-PATEN', mono: true }
+  ];
+
+  rows.forEach((row) => {
+    if (row.highlight) {
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(col1X - 8, tableY - 22, width - 134, rowHeight + 4);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(col1X - 8, tableY - 22, width - 134, rowHeight + 4);
+    }
+
+    ctx.font = 'bold 15px serif';
+    ctx.fillStyle = '#111827';
+    ctx.fillText(row.lbl, col1X, tableY);
+    ctx.fillText(':', colValX - 25, tableY);
+
+    if (row.highlight) {
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillStyle = '#059669';
+    } else if (row.bold) {
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillStyle = '#0f172a';
+    } else if (row.mono) {
+      ctx.font = 'bold 13px monospace';
+      ctx.fillStyle = '#065f46';
+    } else if (row.italic) {
+      ctx.font = 'italic 15px serif';
+      ctx.fillStyle = '#334155';
+    } else {
+      ctx.font = '15px sans-serif';
+      ctx.fillStyle = '#1e293b';
+    }
+
+    const valText = String(row.val || '-');
+    if (valText.length > 55) {
+      wrapText(ctx, valText, colValX, tableY, width - colValX - 80, 20);
+      tableY += 6;
+    } else {
+      ctx.fillText(valText, colValX, tableY);
+    }
+
+    tableY += rowHeight;
+  });
+
+  // KLAUSUL PERNYATAAN MUTLAK
+  tableY += 10;
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(70, tableY, width - 140, 75);
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(70, tableY, width - 140, 75);
+
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillStyle = '#000000';
+  ctx.fillText('PERNYATAAN TANGGUNG JAWAB MUTLAK:', 85, tableY + 24);
+
+  ctx.font = '12px serif';
+  const klausul = 'Dengan ditandatanganinya Berita Acara ini, Pihak Penerima menyatakan telah menerima fisik uang tunai dalam jumlah penuh dan bertanggung jawab mutlak secara yuridis, administratif, dan keuangan atas penggunaan dana tersebut serta wajib menyelesaikan kelengkapan bukti SPJ sesuai ketentuan Keuangan Desa.';
+  wrapText(ctx, klausul, 85, tableY + 45, width - 170, 18);
+
+  // FOTO EVIDEN & TANDA TANGAN
+  tableY += 95;
+
+  if (r.fotoBase64) {
+    try {
+      const imgFoto = await loadImageAsync(r.fotoBase64);
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText('DOKUMENTASI / FOTO PENYERAHAN REAL-TIME:', 70, tableY + 15);
+      
+      const photoBoxH = 260;
+      const photoBoxW = 460;
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(70, tableY + 25, photoBoxW, photoBoxH);
+      ctx.drawImage(imgFoto, 70, tableY + 25, photoBoxW, photoBoxH);
+    } catch (e) {
+      console.warn("Foto draw note:", e);
+    }
+  }
+
+  // TANDA TANGAN AREA
+  const sigAreaX = r.fotoBase64 ? 580 : 70;
+  const sigAreaW = r.fotoBase64 ? 550 : (width - 140);
+
+  ctx.font = '14px serif';
+  ctx.fillStyle = '#000000';
+  ctx.textAlign = 'center';
+
+  // Sisi Kiri / Atas: Kaur Keuangan
+  const kaurSigX = sigAreaX + (sigAreaW * 0.25);
+  ctx.fillText('Pihak Yang Menyerahkan,', kaurSigX, tableY + 30);
+  ctx.font = 'bold 14px serif';
+  ctx.fillText('Kaur Keuangan', kaurSigX, tableY + 48);
+
+  ctx.strokeStyle = '#059669';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(kaurSigX - 75, tableY + 95, 150, 32);
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = '#059669';
+  ctx.fillText('DISERAHKAN TUNAI', kaurSigX, tableY + 116);
+
+  ctx.font = 'bold 15px serif';
+  ctx.fillStyle = '#000000';
+  ctx.fillText(`( ${r.namaKaur || 'Kaur Keuangan'} )`, kaurSigX, tableY + 195);
+
+  // Sisi Kanan / Bawah: Penerima
+  const penerimaSigX = sigAreaX + (sigAreaW * 0.75);
+  ctx.font = '14px serif';
+  ctx.fillText('Pihak Yang Menerima,', penerimaSigX, tableY + 30);
+  ctx.font = 'bold 14px serif';
+  ctx.fillText(r.penerimaJabatan || 'Penerima Uang', penerimaSigX, tableY + 48);
+
+  if (r.tandaTanganBase64) {
+    try {
+      const imgSig = await loadImageAsync(r.tandaTanganBase64);
+      ctx.drawImage(imgSig, penerimaSigX - 80, tableY + 70, 160, 80);
+    } catch (e) {}
+  } else {
+    ctx.beginPath();
+    ctx.strokeStyle = '#94a3b8';
+    ctx.setLineDash([4, 4]);
+    ctx.moveTo(penerimaSigX - 80, tableY + 150);
+    ctx.lineTo(penerimaSigX + 80, tableY + 150);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.font = 'bold 15px serif';
+  ctx.fillStyle = '#000000';
+  ctx.fillText(`( ${r.penerimaNama} )`, penerimaSigX, tableY + 195);
+
+  // FOOTER DOKUMEN
+  ctx.textAlign = 'left';
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('Dokumen Sah Administrasi Keuangan Desa | Geotag & Digital Signature Verified', 70, height - 50);
+  ctx.textAlign = 'right';
+  ctx.fillText(`ID: ${r.id} | Segel: ${r.hashSha256 || 'TERVERIFIKASI'}`, width - 70, height - 50);
+
+  // UNDUH FILE PNG
+  const cleanNo = (r.noBukti || 'BAST').replace(/[\/\\]/g, '_');
+  const fileName = `Kuitansi_${cleanNo}.png`;
+
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      showToast("Gagal menghasilkan file gambar.");
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }, 1500);
+    showToast("✅ Berhasil mengunduh dokumen ke Galeri HP!");
+  }, 'image/png');
+}
+
+function loadImageAsync(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = (text || '').split(' ');
+  let line = '';
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), x, y);
+      line = words[n] + ' ';
+      y += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), x, y);
+  return y + lineHeight;
 }

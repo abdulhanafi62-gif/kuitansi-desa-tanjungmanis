@@ -1,20 +1,26 @@
 package com.desa.tanjungmanis.kuitansi;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.provider.MediaStore;
 import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -75,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
+
+        // Native PDF Printing Interface
+        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidPrinter");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -146,6 +155,35 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    public class WebAppInterface {
+        Context mContext;
+
+        WebAppInterface(Context c) {
+            mContext = c;
+        }
+
+        @JavascriptInterface
+        public void printDocument(String jobName) {
+            runOnUiThread(() -> {
+                try {
+                    PrintManager printManager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+                    if (printManager != null) {
+                        String name = (jobName != null && !jobName.trim().isEmpty()) ? jobName.trim() : "BAST_Kuitansi_Desa";
+                        PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter(name);
+                        PrintAttributes.Builder builder = new PrintAttributes.Builder();
+                        builder.setMediaSize(PrintAttributes.MediaSize.ISO_A4);
+                        builder.setColorMode(PrintAttributes.COLOR_MODE_COLOR);
+                        printManager.print(name, printAdapter, builder.build());
+                    } else {
+                        Toast.makeText(MainActivity.this, "Layanan Cetak PDF tidak tersedia di HP ini", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Gagal membuka Cetak PDF: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
     }
 
     private File createImageFile() throws IOException {

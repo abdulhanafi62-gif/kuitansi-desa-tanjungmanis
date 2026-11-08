@@ -313,6 +313,42 @@ textarea:focus {
   margin: 16px 0;
 }
 
+/* Quick Location Chips */
+.quick-location-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.btn-chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-chip:hover, .btn-chip:active {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e3a8a;
+  transform: translateY(-1px);
+}
+
+.btn-chip.active-chip {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(30, 58, 138, 0.3);
+}
+
 /* GPS Control */
 .gps-control {
   display: flex;
@@ -320,9 +356,8 @@ textarea:focus {
 }
 
 .gps-control input {
-  background-color: #f1f5f9;
-  font-size: 12.5px;
-  font-family: monospace;
+  background-color: #ffffff;
+  font-size: 13.5px;
 }
 
 /* Highlight Box */
@@ -564,6 +599,26 @@ textarea:focus {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+.btn-secondary-sm {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.btn-secondary-sm:hover, .btn-secondary-sm:active {
+  background-color: #e2e8f0;
+  color: #0f172a;
 }
 
 .btn-close {

@@ -58,18 +58,19 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         continue-on-error: true
         with:
-          tag_name: v1.0.0
-          name: "Rilis Resmi APK SI-SERAH DESA v1.0.0"
+          tag_name: v1.0.1
+          name: "Rilis Revisi APK SI-SERAH DESA v1.0.1"
           body: |
-            ### Aplikasi Resmi BAST & Kuitansi Digital Kas Desa Tanjung Manis
+            ### Pembaruan Resmi BAST & Kuitansi Kas Desa Tanjung Manis (Siap Pakai)
             Khusus Kaur Keuangan - Kec. Sangkulirang, Kab. Kutai Timur.
 
-            **Fitur:**
-            - Kunci Satelit GPS Otomatis
-            - Stempel Foto Forensik Anti-Rekayasa
-            - Tanda Tangan Digital di Layar HP
-            - Segel Kriptografi SHA-256
-            - 100% Offline Ready
+            **Pembaruan Fitur:**
+            - 🏢 Penambahan Pilihan Cepat Lokasi (Kantor Desa, Rumah Kades, Pasar, Bank Penyalur, dll)
+            - ✏️ Fitur Input Manual Bebas untuk Lokasi Penyerahan
+            - 📍 Tombol Satelit GPS untuk menyematkan koordinat akurat
+            - 📄 Perbaikan Fitur Cetak / Simpan PDF di Android
+            - 📸 Fitur Baru: Unduh Gambar Kuitansi Resolusi Tinggi Langsung ke Galeri HP
+            - 🔒 Segel Forensik Digital SHA-256 & 100% Offline Ready
             
             **Unduh file APK di bawah ini dan pasang langsung di HP Android Anda:**
           files: build-output/SI-SERAH-DESA-TANJUNG-MANIS.apk
