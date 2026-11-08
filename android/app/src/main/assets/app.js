@@ -660,6 +660,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnExportExcelAudit) {
     btnExportExcelAudit.addEventListener('click', exportFormattedExcel);
   }
+  const btnShareExcelAudit = document.getElementById('btnShareExcelAudit');
+  if (btnShareExcelAudit) {
+    btnShareExcelAudit.addEventListener('click', shareFormattedExcel);
+  }
 
   // Settings Save
   settingsForm.addEventListener('submit', (e) => {
@@ -986,15 +990,7 @@ _Dokumen fisik & tanda tangan digital tersimpan di arsip resmi Kaur Keuangan._`;
 // ==========================================
 // EXCEL EXPORT (LENGKAP, RAPI, BERGARIS RESMI)
 // ==========================================
-async function exportFormattedExcel() {
-  const records = await getAllRecordsFromDB();
-  if (records.length === 0) {
-    showToast("Belum ada data untuk diekspor!");
-    return;
-  }
-
-  showToast("Menyiapkan Buku Rekapitulasi Excel...");
-  const st = getSettings();
+function buildExcelHtml(records, st) {
   const tglCetak = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
 
   // Hitung Total Uang
@@ -1010,7 +1006,7 @@ async function exportFormattedExcel() {
   });
 
   // Susun Template HTML Spreadsheet untuk Microsoft Excel
-  let html = `
+  return `
   <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -1188,13 +1184,41 @@ async function exportFormattedExcel() {
   </body>
   </html>
   `;
+}
 
+// Unduh / Buka Laporan Excel Resmi
+async function exportFormattedExcel() {
+  const records = await getAllRecordsFromDB();
+  if (records.length === 0) {
+    showToast("Belum ada data transaksi untuk diekspor!");
+    return;
+  }
+
+  showToast("Menyiapkan Laporan Rekap Excel...");
+  const st = getSettings();
+  const html = buildExcelHtml(records, st);
+  const cleanTgl = new Date().toISOString().slice(0, 10);
+  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.xls`;
+  const mimeType = 'application/vnd.ms-excel';
+
+  // 1. Android APK Native Bridge (Simpan ke Download & Buka Otomatis di HP)
+  const bridge = (window.AndroidBridge && typeof window.AndroidBridge.saveAndOpenFile === 'function')
+    ? window.AndroidBridge
+    : ((window.AndroidPrinter && typeof window.AndroidPrinter.saveAndOpenFile === 'function') ? window.AndroidPrinter : null);
+
+  if (bridge) {
+    const base64Content = btoa(unescape(encodeURIComponent(html)));
+    bridge.saveAndOpenFile(base64Content, fileName, mimeType);
+    showToast("✅ Membuka Laporan Rekap Excel di HP Anda...");
+    return;
+  }
+
+  // 2. Fallback Standar Browser Web
   const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const tglFile = new Date().toISOString().slice(0, 10);
-  a.download = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${tglFile}.xls`;
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {
@@ -1203,6 +1227,49 @@ async function exportFormattedExcel() {
   }, 1500);
 
   showToast("✅ Berhasil mengunduh Laporan Rekap Excel resmi!");
+}
+
+// Bagikan File Excel (WhatsApp / Google Drive / Email)
+async function shareFormattedExcel() {
+  const records = await getAllRecordsFromDB();
+  if (records.length === 0) {
+    showToast("Belum ada data transaksi kas desa untuk dibagikan!");
+    return;
+  }
+
+  const st = getSettings();
+  const html = buildExcelHtml(records, st);
+  const cleanTgl = new Date().toISOString().slice(0, 10);
+  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.xls`;
+  const mimeType = 'application/vnd.ms-excel';
+
+  // 1. Android Native Share Sheet
+  const bridge = (window.AndroidBridge && typeof window.AndroidBridge.shareFile === 'function')
+    ? window.AndroidBridge
+    : ((window.AndroidPrinter && typeof window.AndroidPrinter.shareFile === 'function') ? window.AndroidPrinter : null);
+
+  if (bridge) {
+    const base64Content = btoa(unescape(encodeURIComponent(html)));
+    bridge.shareFile(base64Content, fileName, mimeType);
+    showToast("Membuka menu bagikan...");
+    return;
+  }
+
+  // 2. Fallback Web Share
+  if (navigator.share) {
+    try {
+      const file = new File([html], fileName, { type: mimeType });
+      await navigator.share({
+        title: 'Buku Rekap Kas Desa Tanjung Manis',
+        text: 'Laporan Rekapitulasi Kas APBDes Tanjung Manis',
+        files: [file]
+      });
+      return;
+    } catch (e) {}
+  }
+
+  // 3. Fallback Export
+  exportFormattedExcel();
 }
 
 // Alias for backwards compatibility
@@ -1219,10 +1286,25 @@ async function downloadBackupJson() {
     records
   };
 
+  const cleanTgl = new Date().toISOString().slice(0, 10);
+  const fileName = `BACKUP_KAS_DESA_TANJUNG_MANIS_${cleanTgl}.json`;
+
+  const bridge = (window.AndroidBridge && typeof window.AndroidBridge.saveAndOpenFile === 'function')
+    ? window.AndroidBridge
+    : ((window.AndroidPrinter && typeof window.AndroidPrinter.saveAndOpenFile === 'function') ? window.AndroidPrinter : null);
+
+  if (bridge) {
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const base64Content = btoa(unescape(encodeURIComponent(jsonStr)));
+    bridge.saveAndOpenFile(base64Content, fileName, 'application/json');
+    showToast("✅ File cadangan disimpan di folder Download HP!");
+    return;
+  }
+
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
   const dlAnchor = document.createElement('a');
   dlAnchor.setAttribute("href", dataStr);
-  dlAnchor.setAttribute("download", `BACKUP_KAS_DESA_TANJUNG_MANIS_${new Date().toISOString().slice(0,10)}.json`);
+  dlAnchor.setAttribute("download", fileName);
   document.body.appendChild(dlAnchor);
   dlAnchor.click();
   dlAnchor.remove();
@@ -1494,6 +1576,19 @@ async function downloadReceiptImage(r) {
   const cleanNo = (r.noBukti || 'BAST').replace(/[\/\\]/g, '_');
   const fileName = `Kuitansi_${cleanNo}.png`;
 
+  // 1. Android APK Native Bridge (Simpan langsung ke Galeri Foto HP)
+  const bridge = (window.AndroidBridge && typeof window.AndroidBridge.saveImageToGallery === 'function')
+    ? window.AndroidBridge
+    : ((window.AndroidPrinter && typeof window.AndroidPrinter.saveImageToGallery === 'function') ? window.AndroidPrinter : null);
+
+  if (bridge) {
+    const dataUrl = canvas.toDataURL('image/png');
+    bridge.saveImageToGallery(dataUrl, fileName);
+    showToast("✅ Menyimpan bukti kuitansi ke Galeri HP...");
+    return;
+  }
+
+  // 2. Fallback Standar Browser Web
   canvas.toBlob((blob) => {
     if (!blob) {
       showToast("Gagal menghasilkan file gambar.");

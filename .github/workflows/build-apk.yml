@@ -58,18 +58,18 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         continue-on-error: true
         with:
-          tag_name: v1.0.2
-          name: "Rilis Resmi APK SI-SERAH DESA v1.0.2 (Format Rapi 1 Halaman A4 & Rekap Excel)"
+          tag_name: v1.0.3
+          name: "Rilis Resmi APK SI-SERAH DESA v1.0.3 (Perbaikan Unduh & Buka Otomatis File Excel di HP)"
           body: |
-            ### Pembaruan Resmi BAST & Kuitansi Kas Desa Tanjung Manis (Versi 1.0.2)
+            ### Pembaruan Resmi BAST & Kuitansi Kas Desa Tanjung Manis (Versi 1.0.3)
             Khusus Kaur Keuangan - Kec. Sangkulirang, Kab. Kutai Timur.
 
-            **Pembaruan Penting v1.0.2:**
-            - 📄 **Format PDF Pas 1 Halaman Penuh A4**: Penataan ulang elemen tata letak sehingga bukti tanda tangan dan klausul tanggung jawab mutlak berada dalam satu lembar rapi tanpa terpotong ke halaman 2.
-            - 🏛️ **Kop Surat Resmi Kabupaten Kutai Timur**: Dilengkapi Logo Kabupaten Kutai Timur di sisi kiri atas serta alamat resmi: *Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684*.
-            - 📊 **Ekspor Laporan Rekapitulasi Excel Bergaris Rapi**: Menghasilkan file spreadsheet `.xls` resmi yang dilengkapi garis tabel (*all borders*), rekap per pihak penerima (Kades, BPD, PKA), total kumulatif dana, dan kolom tanda tangan untuk pertanggungjawaban SPJ & audit BPD/Inspektorat.
-            - 🏢 **Pilihan Cepat & Manual Lokasi**: Pilihan lokasi instan (Kantor Desa, Rumah Kades, dll) serta input manual alamat penyerahan.
-            - 🔒 **Segel Digital SHA-256 & 100% Offline Ready**: Data tersimpan aman di database lokal HP Anda dan keaslian transaksi terverifikasi dengan hash kriptografi.
+            **Pembaruan Penting v1.0.3:**
+            - 📥 **Perbaikan Unduh File Rekap Excel di Android**: File `.xls` kini langsung tersimpan di folder **Download** HP dan secara otomatis membuka menu pilihan aplikasi (*WPS Office / Microsoft Excel / Google Spreadsheet*) di HP Anda.
+            - 📲 **Fitur Baru "Bagikan Excel"**: Tombol khusus untuk langsung membagikan file Rekap Excel ke WhatsApp, Google Drive, atau Email dengan satu klik.
+            - 🖼️ **Simpan Gambar Kuitansi ke Galeri**: Gambar kuitansi kini langsung tersimpan secara permanen ke galeri foto HP (folder *Pictures/KuitansiDesa*).
+            - 📄 **Format PDF 1 Halaman Utuh (Pas A4)**: Tidak terpotong ke lembar 2, tanda tangan & klausul tanggung jawab mutlak rapi berdampingan.
+            - 🏛️ **Kop Surat & Logo Resmi Kutai Timur**: Alamat resmi Desa Tanjung Manis lengkap dengan logo Pemkab Kutai Timur.
             
             **Unduh file APK di bawah ini dan pasang langsung di HP Android Anda:**
           files: build-output/SI-SERAH-DESA-TANJUNG-MANIS.apk

@@ -1,6 +1,8 @@
 package com.desa.tanjungmanis.kuitansi;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -12,6 +14,7 @@ import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintManager;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -29,7 +32,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -82,8 +87,10 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
-        // Native PDF Printing Interface
-        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidPrinter");
+        // Native PDF Printing & File Export Interface
+        WebAppInterface webAppInterface = new WebAppInterface(this);
+        webView.addJavascriptInterface(webAppInterface, "AndroidPrinter");
+        webView.addJavascriptInterface(webAppInterface, "AndroidBridge");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -181,6 +188,179 @@ public class MainActivity extends AppCompatActivity {
                     }
                 } catch (Exception e) {
                     Toast.makeText(MainActivity.this, "Gagal membuka Cetak PDF: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void saveAndOpenFile(String base64Data, String fileName, String mimeType) {
+            runOnUiThread(() -> {
+                try {
+                    String cleanB64 = base64Data;
+                    if (cleanB64.contains(",")) {
+                        cleanB64 = cleanB64.substring(cleanB64.indexOf(",") + 1);
+                    }
+                    byte[] fileBytes = Base64.decode(cleanB64, Base64.DEFAULT);
+
+                    // 1. Simpan ke App External Files (bisa diakses FileProvider untuk Intent View & Share)
+                    File appDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                    if (appDir != null && !appDir.exists()) {
+                        appDir.mkdirs();
+                    }
+                    File appFile = new File(appDir, fileName);
+                    try (FileOutputStream fos = new FileOutputStream(appFile)) {
+                        fos.write(fileBytes);
+                        fos.flush();
+                    }
+
+                    // 2. Simpan juga ke Public Downloads HP agar muncul di File Manager / Download HP
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            ContentValues values = new ContentValues();
+                            values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                            values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+                            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                            Uri publicUri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                            if (publicUri != null) {
+                                try (OutputStream os = getContentResolver().openOutputStream(publicUri)) {
+                                    if (os != null) {
+                                        os.write(fileBytes);
+                                        os.flush();
+                                    }
+                                }
+                            }
+                        } else {
+                            File pubDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                            if (pubDownloads != null && !pubDownloads.exists()) {
+                                pubDownloads.mkdirs();
+                            }
+                            File pubFile = new File(pubDownloads, fileName);
+                            try (FileOutputStream fos = new FileOutputStream(pubFile)) {
+                                fos.write(fileBytes);
+                                fos.flush();
+                            }
+                            Intent scanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                            scanIntent.setData(Uri.fromFile(pubFile));
+                            sendBroadcast(scanIntent);
+                        }
+                    } catch (Exception ignored) {}
+
+                    // 3. Buka File langsung dengan Intent Chooser (WPS Office, Microsoft Excel, Spreadsheet)
+                    Uri contentUri = FileProvider.getUriForFile(
+                            MainActivity.this,
+                            getApplicationContext().getPackageName() + ".fileprovider",
+                            appFile
+                    );
+
+                    Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                    viewIntent.setDataAndType(contentUri, mimeType);
+                    viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                    try {
+                        Intent chooser = Intent.createChooser(viewIntent, "Buka " + fileName + " Dengan:");
+                        chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(chooser);
+                        Toast.makeText(MainActivity.this, "✅ File tersimpan di folder Download: " + fileName, Toast.LENGTH_LONG).show();
+                    } catch (ActivityNotFoundException e) {
+                        // Jika belum ada aplikasi Excel/WPS di HP, buka menu Bagikan (WhatsApp/Drive/Email)
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                        shareIntent.setType(mimeType);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                        shareIntent.putExtra(Intent.EXTRA_SUBJECT, fileName);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        Intent shareChooser = Intent.createChooser(shareIntent, "Bagikan " + fileName + " Ke:");
+                        shareChooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(shareChooser);
+                        Toast.makeText(MainActivity.this, "✅ File tersimpan di Download. Silakan pilih aplikasi untuk membuka.", Toast.LENGTH_LONG).show();
+                    }
+
+                } catch (Exception ex) {
+                    Toast.makeText(MainActivity.this, "Gagal menyimpan file: " + ex.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void shareFile(String base64Data, String fileName, String mimeType) {
+            runOnUiThread(() -> {
+                try {
+                    String cleanB64 = base64Data;
+                    if (cleanB64.contains(",")) {
+                        cleanB64 = cleanB64.substring(cleanB64.indexOf(",") + 1);
+                    }
+                    byte[] fileBytes = Base64.decode(cleanB64, Base64.DEFAULT);
+
+                    File appDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                    if (appDir != null && !appDir.exists()) {
+                        appDir.mkdirs();
+                    }
+                    File appFile = new File(appDir, fileName);
+                    try (FileOutputStream fos = new FileOutputStream(appFile)) {
+                        fos.write(fileBytes);
+                        fos.flush();
+                    }
+
+                    Uri contentUri = FileProvider.getUriForFile(
+                            MainActivity.this,
+                            getApplicationContext().getPackageName() + ".fileprovider",
+                            appFile
+                    );
+
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType(mimeType);
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                    shareIntent.putExtra(Intent.EXTRA_SUBJECT, fileName);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    Intent chooser = Intent.createChooser(shareIntent, "Bagikan " + fileName + " Ke:");
+                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(chooser);
+                } catch (Exception ex) {
+                    Toast.makeText(MainActivity.this, "Gagal membagikan: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void saveImageToGallery(String base64Data, String fileName) {
+            runOnUiThread(() -> {
+                try {
+                    String cleanB64 = base64Data;
+                    if (cleanB64.contains(",")) {
+                        cleanB64 = cleanB64.substring(cleanB64.indexOf(",") + 1);
+                    }
+                    byte[] fileBytes = Base64.decode(cleanB64, Base64.DEFAULT);
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
+                        values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+                        values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/KuitansiDesa");
+                        Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                        if (uri != null) {
+                            try (OutputStream os = getContentResolver().openOutputStream(uri)) {
+                                if (os != null) {
+                                    os.write(fileBytes);
+                                    os.flush();
+                                }
+                            }
+                        }
+                    } else {
+                        File picDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "KuitansiDesa");
+                        if (!picDir.exists()) picDir.mkdirs();
+                        File dest = new File(picDir, fileName);
+                        try (FileOutputStream fos = new FileOutputStream(dest)) {
+                            fos.write(fileBytes);
+                            fos.flush();
+                        }
+                        Intent scanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        scanIntent.setData(Uri.fromFile(dest));
+                        sendBroadcast(scanIntent);
+                    }
+
+                    Toast.makeText(MainActivity.this, "✅ Foto kuitansi berhasil disimpan ke Galeri HP (" + fileName + ")", Toast.LENGTH_LONG).show();
+                } catch (Exception ex) {
+                    Toast.makeText(MainActivity.this, "Gagal menyimpan gambar: " + ex.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         }
