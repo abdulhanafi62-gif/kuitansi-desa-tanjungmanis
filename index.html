@@ -306,6 +306,12 @@
               <h2 class="card-title">Rekapitulasi Penerima Dana</h2>
               <p class="card-subtitle">Pemetaan total uang yang diambil Kades, BPD, dan PKA</p>
             </div>
+            <div class="header-tools">
+              <button type="button" id="btnExportExcelAudit" class="btn-success-sm" title="Download Buku Catatan & Rekapitulasi Excel Bergaris Lengkap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Unduh Rekap Excel
+              </button>
+            </div>
           </div>
 
           <div class="alert-info-box">
@@ -354,6 +360,11 @@
             <div class="form-group">
               <label for="setProvinsi">Provinsi</label>
               <input type="text" id="setProvinsi" value="Kalimantan Timur">
+            </div>
+
+            <div class="form-group">
+              <label for="setAlamatDesa">Alamat Lengkap Kantor Desa</label>
+              <input type="text" id="setAlamatDesa" value="Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684">
             </div>
 
             <hr class="form-divider">
@@ -421,11 +432,14 @@
             <div id="printableDocument" class="printable-paper">
               <!-- Official Kop Surat Desa -->
               <div class="doc-kop">
-                <div class="doc-kop-text">
-                  <h3 class="kop-kab">PEMERINTAH KABUPATEN KUTAI TIMUR</h3>
-                  <h3 class="kop-kec">KECAMATAN SANGKULIRANG</h3>
-                  <h2 class="kop-desa" id="docDesaTitle">PEMERINTAH DESA TANJUNG MANIS</h2>
-                  <p class="kop-alamat" id="docDesaAlamat">Alamat: Kantor Desa Tanjung Manis, Kec. Sangkulirang, Kab. Kutai Timur - Kaltim</p>
+                <div class="kop-header-flex">
+                  <img src="logo-kutim.png" class="kop-logo-img" alt="Logo Kutai Timur">
+                  <div class="doc-kop-text">
+                    <h3 class="kop-kab">PEMERINTAH KABUPATEN KUTAI TIMUR</h3>
+                    <h3 class="kop-kec">KECAMATAN SANGKULIRANG</h3>
+                    <h2 class="kop-desa" id="docDesaTitle">PEMERINTAH DESA TANJUNG MANIS</h2>
+                    <p class="kop-alamat" id="docDesaAlamat">Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684</p>
+                  </div>
                 </div>
                 <div class="doc-kop-line"></div>
               </div>
@@ -495,19 +509,24 @@
                 </tr>
               </table>
 
-              <!-- Klausul Hukum Tanggung Jawab Mutlak -->
-              <div class="doc-klausul">
-                <strong>PERNYATAAN TANGGUNG JAWAB MUTLAK:</strong>
-                <p>
-                  Dengan ditandatanganinya Berita Acara ini, Pihak Penerima menyatakan telah menerima fisik uang tunai dalam jumlah penuh sebagaimana tercantum di atas, dan <u>bertanggung jawab mutlak</u> baik secara yuridis, administratif, maupun keuangan atas penggunaan dana tersebut serta wajib menyelesaikan kelengkapan bukti SPJ (Surat Pertanggungjawaban) sesuai ketentuan peraturan perundang-undangan tentang Keuangan Desa.
-                </p>
-              </div>
+              <!-- Grid Berdampingan: Foto Eviden & Klausul Mutlak (Agar Muat 1 Lembar A4 Rapi) -->
+              <div class="doc-bottom-grid">
+                <!-- Kolom Kiri: Foto Eviden Fisik -->
+                <div class="doc-eviden-block">
+                  <div class="eviden-header">DOKUMENTASI PENYERAHAN REAL-TIME:</div>
+                  <div class="eviden-photo-container">
+                    <img id="docFotoEviden" class="doc-foto-img" alt="Foto Bukti Penyerahan">
+                  </div>
+                </div>
 
-              <!-- Foto Eviden Fisik -->
-              <div class="doc-eviden-block">
-                <div class="eviden-header">DOKUMENTASI / EVIDEN FISIK PENYERAHAN REAL-TIME:</div>
-                <div class="eviden-photo-container">
-                  <img id="docFotoEviden" class="doc-foto-img" alt="Foto Bukti Penyerahan">
+                <!-- Kolom Kanan: Pernyataan Tanggung Jawab Mutlak -->
+                <div class="doc-klausul-block">
+                  <div class="doc-klausul">
+                    <strong>PERNYATAAN TANGGUNG JAWAB MUTLAK:</strong>
+                    <p>
+                      Dengan ditandatanganinya Berita Acara ini, Pihak Penerima menyatakan telah menerima fisik uang tunai dalam jumlah penuh sebagaimana tercantum di atas, dan <u>bertanggung jawab mutlak</u> baik secara yuridis, administratif, maupun keuangan atas penggunaan dana tersebut serta wajib menyelesaikan kelengkapan bukti SPJ sesuai peraturan perundang-undangan.
+                    </p>
+                  </div>
                 </div>
               </div>
 

@@ -184,8 +184,9 @@ const DEFAULT_SETTINGS = {
   kecamatan: 'Sangkulirang',
   kabupaten: 'Kutai Timur',
   provinsi: 'Kalimantan Timur',
+  alamatDesa: 'Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684',
   namaKaur: 'Kaur Keuangan',
-  kadesNamaDefault: ''
+  kadesNamaDefault: 'Asmail'
 };
 
 function getSettings() {
@@ -319,6 +320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const searchInput = document.getElementById('searchInput');
   const filterPihak = document.getElementById('filterPihak');
   const btnExportCsv = document.getElementById('btnExportCsv');
+  const btnExportExcelAudit = document.getElementById('btnExportExcelAudit');
   const settingsForm = document.getElementById('settingsForm');
   const btnQuickBackup = document.getElementById('btnQuickBackup');
   const btnDownloadBackupJson = document.getElementById('btnDownloadBackupJson');
@@ -653,8 +655,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   searchInput.addEventListener('input', () => renderRecordsList());
   filterPihak.addEventListener('change', () => renderRecordsList());
 
-  // Export CSV
-  btnExportCsv.addEventListener('click', exportToCsv);
+  // Export Excel & Rekapitulasi (Bergaris Rapi)
+  btnExportCsv.addEventListener('click', exportFormattedExcel);
+  if (btnExportExcelAudit) {
+    btnExportExcelAudit.addEventListener('click', exportFormattedExcel);
+  }
 
   // Settings Save
   settingsForm.addEventListener('submit', (e) => {
@@ -664,8 +669,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       kecamatan: document.getElementById('setKecamatan').value.trim() || 'Sangkulirang',
       kabupaten: document.getElementById('setKabupaten').value.trim() || 'Kutai Timur',
       provinsi: document.getElementById('setProvinsi').value.trim() || 'Kalimantan Timur',
+      alamatDesa: document.getElementById('setAlamatDesa') ? document.getElementById('setAlamatDesa').value.trim() : 'Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684',
       namaKaur: document.getElementById('setNamaKaur').value.trim() || 'Kaur Keuangan',
-      kadesNamaDefault: document.getElementById('setKadesNamaDefault').value.trim() || ''
+      kadesNamaDefault: document.getElementById('setKadesNamaDefault').value.trim() || 'Asmail'
     };
     saveSettings(newSettings);
     applySettingsToUI(newSettings);
@@ -711,15 +717,18 @@ function generateAutoNoBukti() {
 function applySettingsToUI(st) {
   document.getElementById('headerSubtitle').textContent = `Desa ${st.namaDesa}, Kec. ${st.kecamatan}`;
   document.getElementById('docDesaTitle').textContent = `PEMERINTAH DESA ${st.namaDesa.toUpperCase()}`;
-  document.getElementById('docDesaAlamat').textContent = `Alamat: Kantor Desa ${st.namaDesa}, Kec. ${st.kecamatan}, Kab. ${st.kabupaten} - ${st.provinsi}`;
+  document.getElementById('docDesaAlamat').textContent = st.alamatDesa || 'Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684';
 
   // Form settings inputs
   document.getElementById('setNamaDesa').value = st.namaDesa;
   document.getElementById('setKecamatan').value = st.kecamatan;
   document.getElementById('setKabupaten').value = st.kabupaten;
   document.getElementById('setProvinsi').value = st.provinsi;
+  if (document.getElementById('setAlamatDesa')) {
+    document.getElementById('setAlamatDesa').value = st.alamatDesa || 'Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684';
+  }
   document.getElementById('setNamaKaur').value = st.namaKaur || '';
-  document.getElementById('setKadesNamaDefault').value = st.kadesNamaDefault || '';
+  document.getElementById('setKadesNamaDefault').value = st.kadesNamaDefault || 'Asmail';
 }
 
 async function updateBadgeCount() {
@@ -974,41 +983,230 @@ _Dokumen fisik & tanda tangan digital tersimpan di arsip resmi Kaur Keuangan._`;
   window.open(`https://wa.me/?text=${encoded}`, '_blank');
 }
 
-// Export to CSV
-async function exportToCsv() {
+// ==========================================
+// EXCEL EXPORT (LENGKAP, RAPI, BERGARIS RESMI)
+// ==========================================
+async function exportFormattedExcel() {
   const records = await getAllRecordsFromDB();
   if (records.length === 0) {
-    alert("Belum ada data untuk diekspor!");
+    showToast("Belum ada data untuk diekspor!");
     return;
   }
 
-  const headers = ["No Bukti", "Tanggal", "Nama Penerima", "Jabatan Penerima", "Sumber Dana", "Bidang", "Nominal (Rp)", "Terbilang", "Uraian Keperluan", "Catatan Khusus", "Koordinat GPS"];
-  
-  const rows = records.map(r => [
-    `"${r.noBukti}"`,
-    `"${r.tanggal}"`,
-    `"${r.penerimaNama}"`,
-    `"${r.penerimaJabatan}"`,
-    `"${r.sumberDana}"`,
-    `"${r.bidangKegiatan}"`,
-    r.jumlahUang,
-    `"${r.terbilang}"`,
-    `"${(r.uraianKeperluan || '').replace(/"/g, '""')}"`,
-    `"${(r.catatanKaur || '').replace(/"/g, '""')}"`,
-    `"${(r.lokasiKoordinat || '').replace(/"/g, '""')}"`
-  ]);
+  showToast("Menyiapkan Buku Rekapitulasi Excel...");
+  const st = getSettings();
+  const tglCetak = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
 
-  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  // Hitung Total Uang
+  const totalNominal = records.reduce((acc, curr) => acc + (curr.jumlahUang || 0), 0);
+
+  // Rekapitulasi Akumulasi per Pihak Penerima
+  const groupPihak = {};
+  records.forEach(r => {
+    const p = r.penerimaJabatan || 'Lainnya';
+    if (!groupPihak[p]) groupPihak[p] = { count: 0, total: 0 };
+    groupPihak[p].count += 1;
+    groupPihak[p].total += (r.jumlahUang || 0);
+  });
+
+  // Susun Template HTML Spreadsheet untuk Microsoft Excel
+  let html = `
+  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <!--[if gte mso 9]>
+    <xml>
+      <x:ExcelWorkbook>
+        <x:ExcelWorksheets>
+          <x:ExcelWorksheet>
+            <x:Name>Buku Rekap Kas Desa</x:Name>
+            <x:WorksheetOptions>
+              <x:DisplayGridlines/>
+            </x:WorksheetOptions>
+          </x:ExcelWorksheet>
+        </x:ExcelWorksheets>
+      </x:ExcelWorkbook>
+    </xml>
+    <![endif]-->
+    <style>
+      body { font-family: 'Calibri', 'Segoe UI', Arial, sans-serif; font-size: 11pt; }
+      table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+      .kop-title-1 { font-size: 13pt; font-weight: bold; text-align: center; }
+      .kop-title-2 { font-size: 13pt; font-weight: bold; text-align: center; }
+      .kop-title-3 { font-size: 16pt; font-weight: bold; text-align: center; color: #1e3a8a; }
+      .kop-alamat { font-size: 10pt; font-style: italic; text-align: center; color: #222222; }
+      .doc-title { font-size: 13pt; font-weight: bold; text-align: center; background-color: #f1f5f9; padding: 8px; border: 1px solid #000000; }
+      .doc-subtitle { font-size: 10pt; text-align: center; font-style: italic; }
+      
+      /* Table styling */
+      th.tbl-head { background-color: #1e3a8a; color: #ffffff; font-weight: bold; text-align: center; border: 1px solid #000000; padding: 8px 6px; font-size: 10pt; }
+      td.tbl-cell { border: 1px solid #000000; padding: 6px 8px; vertical-align: top; font-size: 10pt; }
+      td.tbl-center { border: 1px solid #000000; padding: 6px 8px; text-align: center; vertical-align: top; font-size: 10pt; }
+      td.tbl-currency { border: 1px solid #000000; padding: 6px 8px; text-align: right; vertical-align: top; font-size: 10pt; font-weight: bold; mso-number-format:"\#\,\#\#0"; }
+      td.tbl-currency-total { border-top: 2px solid #000000; border-bottom: 3px double #000000; border-left: 1px solid #000; border-right: 1px solid #000; padding: 8px; text-align: right; font-size: 11pt; font-weight: bold; background-color: #dbeafe; mso-number-format:"\#\,\#\#0"; }
+      .row-zebra { background-color: #f8fafc; }
+      
+      /* Summary Box */
+      .summary-head { background-color: #059669; color: #ffffff; font-weight: bold; border: 1px solid #000000; padding: 6px; font-size: 10.5pt; text-align: center; }
+      .summary-cell { border: 1px solid #000000; padding: 6px 8px; font-size: 10pt; }
+    </style>
+  </head>
+  <body>
+    <!-- KOP PEMERINTAH DESA TANJUNG MANIS -->
+    <table>
+      <tr>
+        <td colspan="12" class="kop-title-1">PEMERINTAH KABUPATEN ${(st.kabupaten || 'KUTAI TIMUR').toUpperCase()}</td>
+      </tr>
+      <tr>
+        <td colspan="12" class="kop-title-2">KECAMATAN ${(st.kecamatan || 'SANGKULIRANG').toUpperCase()}</td>
+      </tr>
+      <tr>
+        <td colspan="12" class="kop-title-3">PEMERINTAH DESA ${(st.namaDesa || 'TANJUNG MANIS').toUpperCase()}</td>
+      </tr>
+      <tr>
+        <td colspan="12" class="kop-alamat">Alamat: ${st.alamatDesa}</td>
+      </tr>
+      <tr><td colspan="12" style="border-bottom: 3px double #000000; height: 4px;"></td></tr>
+      <tr><td colspan="12" style="height: 10px;"></td></tr>
+      <tr>
+        <td colspan="12" class="doc-title">BUKU CATATAN KHUSUS & REKAPITULASI PENYERAHAN DANA KAS APBDES</td>
+      </tr>
+      <tr>
+        <td colspan="12" class="doc-subtitle">Pegangan Akuntabilitas Kaur Keuangan - Dicetak pada: ${tglCetak} WITA</td>
+      </tr>
+      <tr><td colspan="12" style="height: 10px;"></td></tr>
+    </table>
+
+    <!-- TABEL TRANSAKSI LENGKAP -->
+    <table>
+      <thead>
+        <tr>
+          <th class="tbl-head" style="width: 40px;">NO</th>
+          <th class="tbl-head" style="width: 140px;">NO. BUKTI BAST</th>
+          <th class="tbl-head" style="width: 140px;">HARI / TANGGAL</th>
+          <th class="tbl-head" style="width: 150px;">JABATAN PENERIMA</th>
+          <th class="tbl-head" style="width: 170px;">NAMA LENGKAP PENERIMA</th>
+          <th class="tbl-head" style="width: 130px;">SUMBER DANA</th>
+          <th class="tbl-head" style="width: 160px;">BIDANG APBDES</th>
+          <th class="tbl-head" style="width: 250px;">URAIAN KEPERLUAN DANA</th>
+          <th class="tbl-head" style="width: 140px;">NOMINAL (RP)</th>
+          <th class="tbl-head" style="width: 190px;">TEMPAT / LOKASI & GPS</th>
+          <th class="tbl-head" style="width: 260px;">CATATAN FAKTA KAUR</th>
+          <th class="tbl-head" style="width: 170px;">SEGEL FORENSIK SHA-256</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  records.forEach((r, idx) => {
+    const isZebra = idx % 2 === 1 ? 'class="row-zebra"' : '';
+    const dateFormatted = new Date(r.tanggal).toLocaleDateString('id-ID', {
+      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    html += `
+      <tr ${isZebra}>
+        <td class="tbl-center">${idx + 1}</td>
+        <td class="tbl-center" style="font-weight: bold; font-family: monospace;">${r.noBukti || '-'}</td>
+        <td class="tbl-center">${dateFormatted}</td>
+        <td class="tbl-cell" style="font-weight: bold;">${r.penerimaJabatan || '-'}</td>
+        <td class="tbl-cell" style="font-weight: bold; color: #0f172a;">${r.penerimaNama || '-'}</td>
+        <td class="tbl-cell">${r.sumberDana || '-'}</td>
+        <td class="tbl-cell">${r.bidangKegiatan || '-'}</td>
+        <td class="tbl-cell">${r.uraianKeperluan || '-'}</td>
+        <td class="tbl-currency">${r.jumlahUang || 0}</td>
+        <td class="tbl-cell">${r.lokasiKoordinat || '-'}</td>
+        <td class="tbl-cell" style="background-color: #fffbeb; font-style: italic;">${r.catatanKaur || '-'}</td>
+        <td class="tbl-center" style="font-family: monospace; font-size: 8pt; color: #065f46;">${r.hashSha256 || '-'}</td>
+      </tr>
+    `;
+  });
+
+  // BARIS TOTAL NOMINAL
+  html += `
+      <tr>
+        <td colspan="8" class="tbl-currency-total" style="text-align: right; font-size: 11pt;">JUMLAH TOTAL SELURUH PENGELUARAN KAS:</td>
+        <td class="tbl-currency-total">${totalNominal}</td>
+        <td colspan="3" class="tbl-currency-total" style="text-align: left; font-size: 10pt; font-style: italic;">"${konversiTerbilang(totalNominal)}"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- REKAPITULASI TOTAL PER PIHAK PENERIMA -->
+  <table style="width: 550px; margin-top: 15px;">
+    <thead>
+      <tr>
+        <th colspan="3" class="summary-head">REKAPITULASI TOTAL PENGELUARAN PER PIHAK PENERIMA</th>
+      </tr>
+      <tr>
+        <th class="tbl-head">PIHAK / JABATAN</th>
+        <th class="tbl-head" style="width: 130px;">FREKUENSI</th>
+        <th class="tbl-head" style="width: 180px;">TOTAL DANA (RP)</th>
+      </tr>
+    </thead>
+    <tbody>
+  `;
+
+  Object.keys(groupPihak).forEach(key => {
+    html += `
+      <tr>
+        <td class="summary-cell" style="font-weight: bold;">${key}</td>
+        <td class="tbl-center">${groupPihak[key].count} kali penyerahan</td>
+        <td class="tbl-currency">${groupPihak[key].total}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      <tr style="background-color: #dbeafe; font-weight: bold;">
+        <td class="summary-cell" style="text-align: right;">TOTAL:</td>
+        <td class="tbl-center">${records.length} Transaksi</td>
+        <td class="tbl-currency">${totalNominal}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- LEMBAR TANDA TANGAN PENGESAHAN LAPORAN -->
+  <table style="margin-top: 35px; width: 100%;">
+    <tr>
+      <td colspan="4" style="text-align: center; font-size: 11pt;">
+        Mengetahui,<br>
+        <strong>Kepala Desa ${st.namaDesa}</strong>
+        <br><br><br><br><br>
+        <strong><u>( ${st.kadesNamaDefault || 'Asmail'} )</u></strong>
+      </td>
+      <td colspan="4"></td>
+      <td colspan="4" style="text-align: center; font-size: 11pt;">
+        Desa ${st.namaDesa}, ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}<br>
+        <strong>Kaur Keuangan Desa ${st.namaDesa}</strong>
+        <br><br><br><br><br>
+        <strong><u>( ${st.namaKaur || 'Kaur Keuangan'} )</u></strong>
+      </td>
+    </tr>
+  </table>
+
+  </body>
+  </html>
+  `;
+
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Rekap_Serah_Terima_Kas_Tanjung_Manis_${new Date().toISOString().slice(0,10)}.csv`;
+  const tglFile = new Date().toISOString().slice(0, 10);
+  a.download = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${tglFile}.xls`;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  showToast("File Excel/CSV berhasil diunduh!");
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1500);
+
+  showToast("✅ Berhasil mengunduh Laporan Rekap Excel resmi!");
 }
+
+// Alias for backwards compatibility
+const exportToCsv = exportFormattedExcel;
 
 // JSON Backup Download
 async function downloadBackupJson() {
@@ -1086,7 +1284,14 @@ async function downloadReceiptImage(r) {
   ctx.lineWidth = 3;
   ctx.strokeRect(35, 35, width - 70, height - 70);
 
-  // KOP SURAT RESMI DESA
+  // KOP SURAT RESMI DESA (DENGAN LOGO KUTAI TIMUR)
+  try {
+    const imgLogo = await loadImageAsync('logo-kutim.png');
+    ctx.drawImage(imgLogo, 65, 52, 75, 95);
+  } catch (e) {
+    console.warn("Logo draw note:", e);
+  }
+
   ctx.textAlign = 'center';
   ctx.fillStyle = '#0f172a';
   ctx.font = 'bold 22px serif';
@@ -1098,7 +1303,7 @@ async function downloadReceiptImage(r) {
 
   ctx.font = 'italic 15px sans-serif';
   ctx.fillStyle = '#334155';
-  ctx.fillText(`Alamat: Kantor Desa ${r.namaDesa || 'Tanjung Manis'}, Kec. ${r.kecamatan || 'Sangkulirang'}, Kab. ${r.kabupaten || 'Kutai Timur'} - ${r.provinsi || 'Kaltim'}`, width / 2, 185);
+  ctx.fillText('Jl. Poros RT. 003 Dusun I Desa Tanjung Manis Kecamatan Sangkulirang Kode Pos 75684', width / 2, 185);
 
   // Garis Ganda Pemisah Kop
   ctx.beginPath();
