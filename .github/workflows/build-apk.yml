@@ -20,7 +20,7 @@ jobs:
       - name: Copy Web Assets to Android Assets
         run: |
           mkdir -p android/app/src/main/assets
-          cp index.html styles.css app.js manifest.json sw.js logo-kutim.png android/app/src/main/assets/
+          cp index.html styles.css app.js manifest.json sw.js logo-kutim.png xlsx.full.min.js android/app/src/main/assets/
           echo "Web assets copied successfully into Android asset folder."
 
       - name: Set up JDK 17
@@ -58,18 +58,20 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         continue-on-error: true
         with:
-          tag_name: v1.0.3
-          name: "Rilis Resmi APK SI-SERAH DESA v1.0.3 (Perbaikan Unduh & Buka Otomatis File Excel di HP)"
+          tag_name: v1.0.4
+          name: "Rilis Resmi APK SI-SERAH DESA v1.0.4 (Format Asli .xlsx & Pratinjau Tabel Lengkap)"
           body: |
-            ### Pembaruan Resmi BAST & Kuitansi Kas Desa Tanjung Manis (Versi 1.0.3)
+            ### Pembaruan Resmi BAST & Kuitansi Kas Desa Tanjung Manis (Versi 1.0.4)
             Khusus Kaur Keuangan - Kec. Sangkulirang, Kab. Kutai Timur.
 
-            **Pembaruan Penting v1.0.3:**
-            - 📥 **Perbaikan Unduh File Rekap Excel di Android**: File `.xls` kini langsung tersimpan di folder **Download** HP dan secara otomatis membuka menu pilihan aplikasi (*WPS Office / Microsoft Excel / Google Spreadsheet*) di HP Anda.
-            - 📲 **Fitur Baru "Bagikan Excel"**: Tombol khusus untuk langsung membagikan file Rekap Excel ke WhatsApp, Google Drive, atau Email dengan satu klik.
-            - 🖼️ **Simpan Gambar Kuitansi ke Galeri**: Gambar kuitansi kini langsung tersimpan secara permanen ke galeri foto HP (folder *Pictures/KuitansiDesa*).
-            - 📄 **Format PDF 1 Halaman Utuh (Pas A4)**: Tidak terpotong ke lembar 2, tanda tangan & klausul tanggung jawab mutlak rapi berdampingan.
-            - 🏛️ **Kop Surat & Logo Resmi Kutai Timur**: Alamat resmi Desa Tanjung Manis lengkap dengan logo Pemkab Kutai Timur.
+            **Pembaruan Penting v1.0.4:**
+            - 📊 **Format Asli Excel OpenXML (.xlsx)**: Menggunakan SheetJS standar industri sehingga file dijamin terbaca 100% lengkap berisi baris dan kolom di semua aplikasi HP (WPS Office, Microsoft Excel Mobile, Google Spreadsheet). Tidak ada lagi masalah file kosong atau peringatan format.
+            - 📑 **Sheet Ganda Otomatis**: 
+              - *Sheet 1 (Buku Kas APBDes)*: Rincian 12 kolom lengkap, catatan kaur, dan pengesahan tanda tangan.
+              - *Sheet 2 (Rekap per Penerima)*: Ringkasan akumulasi penyerahan ke Kepala Desa, BPD, dan PKA.
+            - 📋 **Pratinjau Tabel Langsung di Layar HP**: Pada tab Rekapitulasi kini langsung muncul tabel buku kas desa lengkap dengan warna dan garis tegas, sehingga Anda bisa langsung melihat data tanpa harus membuka aplikasi lain.
+            - 📑 **Pilihan Ekspor CSV Ringan (.csv)**: Opsi tambahan untuk unduh data dalam format CSV universal.
+            - 📲 **Bagikan ke WhatsApp (.xlsx)**: Kirim laporan Excel resmi langsung ke WhatsApp dengan satu kali sentuh.
             
             **Unduh file APK di bawah ini dan pasang langsung di HP Android Anda:**
           files: build-output/SI-SERAH-DESA-TANJUNG-MANIS.apk

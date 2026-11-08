@@ -660,6 +660,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnExportExcelAudit) {
     btnExportExcelAudit.addEventListener('click', exportFormattedExcel);
   }
+  const btnExportCsvAudit = document.getElementById('btnExportCsvAudit');
+  if (btnExportCsvAudit) {
+    btnExportCsvAudit.addEventListener('click', exportCsvOnly);
+  }
   const btnShareExcelAudit = document.getElementById('btnShareExcelAudit');
   if (btnShareExcelAudit) {
     btnShareExcelAudit.addEventListener('click', shareFormattedExcel);
@@ -955,6 +959,63 @@ async function renderAuditRecap() {
       </div>
     `).join('');
   }
+
+  // Render Tabel Lengkap Buku Kas Desa di Layar (Pratinjau Langsung)
+  const containerLiveTable = document.getElementById('rekapTableLiveContainer');
+  if (containerLiveTable) {
+    if (records.length === 0) {
+      containerLiveTable.innerHTML = `<p class="text-muted text-center py-4">Belum ada data transaksi tersimpan. Isi formulir kuitansi di Tab 1 untuk memulai.</p>`;
+    } else {
+      let tblHtml = `
+      <table style="width: 100%; border-collapse: collapse; font-size: 11px; min-width: 820px; text-align: left;">
+        <thead>
+          <tr style="background: #1e3a8a; color: #ffffff;">
+            <th style="padding: 7px 5px; border: 1px solid #94a3b8; text-align: center; width: 35px;">NO</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; text-align: center; width: 110px;">NO. BUKTI</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; width: 130px;">HARI / TANGGAL</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; width: 140px;">PENERIMA (JABATAN)</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; width: 110px;">SUMBER DANA</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; width: 150px;">URAIAN KEPERLUAN</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; text-align: right; width: 110px;">NOMINAL (RP)</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; width: 170px;">CATATAN FAKTA KAUR</th>
+            <th style="padding: 7px 6px; border: 1px solid #94a3b8; text-align: center; width: 90px;">SEGEL DIGITAL</th>
+          </tr>
+        </thead>
+        <tbody>
+      `;
+      let grandTotal = 0;
+      records.forEach((r, idx) => {
+        grandTotal += (r.jumlahUang || 0);
+        const bg = idx % 2 === 1 ? '#f8fafc' : '#ffffff';
+        const dStr = new Date(r.tanggal).toLocaleDateString('id-ID', {
+          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        tblHtml += `
+          <tr style="background: ${bg}; border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">${idx + 1}</td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1; text-align: center; font-family: monospace; font-weight: bold; color: #1e3a8a;">${r.noBukti || '-'}</td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1;">${dStr}</td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1;"><strong style="color: #0f172a;">${r.penerimaNama || '-'}</strong><br><small style="color: #64748b; font-weight: 600;">${r.penerimaJabatan || '-'}</small></td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1;"><span style="background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 3px; font-size: 10px; font-weight: 600;">${r.sumberDana || '-'}</span></td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1;">${r.uraianKeperluan || '-'}</td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: bold; color: #047857;">${formatRupiah(r.jumlahUang)}</td>
+            <td style="padding: 6px 6px; border: 1px solid #cbd5e1; background: #fffbeb; color: #92400e; font-style: italic; font-size: 10.5px;">${r.catatanKaur || '-'}</td>
+            <td style="padding: 6px 4px; border: 1px solid #cbd5e1; text-align: center; font-family: monospace; font-size: 9px; color: #059669; font-weight: bold;">${(r.hashSha256 || 'TERVERIFIKASI').substring(0, 10)}...</td>
+          </tr>
+        `;
+      });
+      tblHtml += `
+          <tr style="background: #dbeafe; font-weight: bold; border-top: 2px solid #1e3a8a;">
+            <td colspan="6" style="padding: 8px 6px; border: 1px solid #94a3b8; text-align: right; font-size: 11px;">TOTAL SELURUH PENGELUARAN KAS:</td>
+            <td style="padding: 8px 6px; border: 1px solid #94a3b8; text-align: right; font-size: 12px; color: #0f172a;">${formatRupiah(grandTotal)}</td>
+            <td colspan="2" style="padding: 8px 6px; border: 1px solid #94a3b8; font-style: italic; font-size: 10.5px; color: #1e3a8a;">"${konversiTerbilang(grandTotal)}"</td>
+          </tr>
+        </tbody>
+      </table>
+      `;
+      containerLiveTable.innerHTML = tblHtml;
+    }
+  }
 }
 
 // WhatsApp Formatted Text Share
@@ -1186,35 +1247,213 @@ function buildExcelHtml(records, st) {
   `;
 }
 
-// Unduh / Buka Laporan Excel Resmi
+// ====================================================
+// GENERATOR EXCEL ASLI (.XLSX) VIA SHEETJS
+// ====================================================
+function generateRealXlsxBase64(records, st) {
+  const tglCetak = new Date().toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' });
+  const totalNominal = records.reduce((acc, curr) => acc + (curr.jumlahUang || 0), 0);
+
+  // Grouping akumulasi per pihak
+  const groupPihak = {};
+  records.forEach(r => {
+    const p = r.penerimaJabatan || 'Lainnya';
+    if (!groupPihak[p]) groupPihak[p] = { count: 0, total: 0 };
+    groupPihak[p].count += 1;
+    groupPihak[p].total += (r.jumlahUang || 0);
+  });
+
+  // Sheet 1: BUKU KAS APBDES TANJUNG MANIS
+  const ws1Data = [
+    ["PEMERINTAH KABUPATEN " + (st.kabupaten || 'KUTAI TIMUR').toUpperCase()],
+    ["KECAMATAN " + (st.kecamatan || 'SANGKULIRANG').toUpperCase()],
+    ["PEMERINTAH DESA " + (st.namaDesa || 'TANJUNG MANIS').toUpperCase()],
+    ["Alamat: " + (st.alamatDesa || '')],
+    [],
+    ["BUKU CATATAN KHUSUS & REKAPITULASI PENYERAHAN DANA KAS APBDES"],
+    ["Pegangan Akuntabilitas Kaur Keuangan - Dicetak pada: " + tglCetak + " WITA"],
+    [],
+    [
+      "NO",
+      "NO. BUKTI BAST",
+      "HARI / TANGGAL",
+      "JABATAN PENERIMA",
+      "NAMA LENGKAP PENERIMA",
+      "SUMBER DANA",
+      "BIDANG APBDES",
+      "URAIAN KEPERLUAN DANA",
+      "NOMINAL (RP)",
+      "TEMPAT / LOKASI & GPS",
+      "CATATAN FAKTA KAUR",
+      "SEGEL FORENSIK SHA-256"
+    ]
+  ];
+
+  records.forEach((r, idx) => {
+    const dateFormatted = new Date(r.tanggal).toLocaleDateString('id-ID', {
+      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    ws1Data.push([
+      idx + 1,
+      r.noBukti || '-',
+      dateFormatted,
+      r.penerimaJabatan || '-',
+      r.penerimaNama || '-',
+      r.sumberDana || '-',
+      r.bidangKegiatan || '-',
+      r.uraianKeperluan || '-',
+      Number(r.jumlahUang) || 0,
+      r.lokasiKoordinat || '-',
+      r.catatanKaur || '-',
+      r.hashSha256 || '-'
+    ]);
+  });
+
+  // Total Baris
+  ws1Data.push([]);
+  ws1Data.push([
+    "", "", "", "", "", "", "",
+    "JUMLAH TOTAL SELURUH PENGELUARAN KAS:",
+    totalNominal,
+    '"' + konversiTerbilang(totalNominal) + '"',
+    "", ""
+  ]);
+
+  // Kolom Tanda Tangan
+  ws1Data.push([]);
+  ws1Data.push([]);
+  ws1Data.push([
+    "", "Mengetahui,", "", "", "", "", "", "Desa " + st.namaDesa + ", " + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+  ]);
+  ws1Data.push([
+    "", "Kepala Desa " + st.namaDesa, "", "", "", "", "", "Kaur Keuangan Desa " + st.namaDesa
+  ]);
+  ws1Data.push([]);
+  ws1Data.push([]);
+  ws1Data.push([
+    "", "( " + (st.kadesNamaDefault || 'Asmail') + " )", "", "", "", "", "", "( " + (st.namaKaur || 'Kaur Keuangan') + " )"
+  ]);
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
+
+  ws1['!cols'] = [
+    { wch: 6 },
+    { wch: 24 },
+    { wch: 25 },
+    { wch: 22 },
+    { wch: 28 },
+    { wch: 20 },
+    { wch: 25 },
+    { wch: 35 },
+    { wch: 20 },
+    { wch: 30 },
+    { wch: 40 },
+    { wch: 28 }
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws1, "Buku Kas APBDes");
+
+  // Sheet 2: REKAPITULASI TOTAL PER PIHAK PENERIMA
+  const ws2Data = [
+    ["PEMERINTAH DESA " + (st.namaDesa || 'TANJUNG MANIS').toUpperCase()],
+    ["REKAPITULASI TOTAL PENGELUARAN PER PIHAK PENERIMA"],
+    ["Dicetak pada: " + tglCetak + " WITA"],
+    [],
+    ["PIHAK / JABATAN PENERIMA", "FREKUENSI PENYERAHAN", "TOTAL DANA DISERAHKAN (RP)"]
+  ];
+
+  Object.keys(groupPihak).forEach(key => {
+    ws2Data.push([
+      key,
+      groupPihak[key].count + " kali penyerahan",
+      groupPihak[key].total
+    ]);
+  });
+
+  ws2Data.push([
+    "TOTAL SELURUHNYA",
+    records.length + " Transaksi",
+    totalNominal
+  ]);
+
+  const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+  ws2['!cols'] = [{ wch: 32 }, { wch: 25 }, { wch: 28 }];
+  XLSX.utils.book_append_sheet(wb, ws2, "Rekap per Penerima");
+
+  return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+}
+
+// Generator CSV
+function generateCsvContent(records, st) {
+  let csv = '\uFEFF'; // UTF-8 BOM
+  csv += `"NO";"NO. BUKTI BAST";"HARI/TANGGAL";"JABATAN PENERIMA";"NAMA PENERIMA";"SUMBER DANA";"BIDANG";"URAIAN KEPERLUAN";"NOMINAL (RP)";"LOKASI & GPS";"CATATAN FAKTA KAUR";"SEGEL FORENSIK SHA-256"\r\n`;
+
+  records.forEach((r, idx) => {
+    const dateFormatted = new Date(r.tanggal).toLocaleDateString('id-ID', {
+      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const safeStr = (s) => `"${(s || '').toString().replace(/"/g, '""')}"`;
+    csv += [
+      idx + 1,
+      safeStr(r.noBukti),
+      safeStr(dateFormatted),
+      safeStr(r.penerimaJabatan),
+      safeStr(r.penerimaNama),
+      safeStr(r.sumberDana),
+      safeStr(r.bidangKegiatan),
+      safeStr(r.uraianKeperluan),
+      r.jumlahUang || 0,
+      safeStr(r.lokasiKoordinat),
+      safeStr(r.catatanKaur),
+      safeStr(r.hashSha256)
+    ].join(';') + '\r\n';
+  });
+
+  return csv;
+}
+
+// Unduh File Excel Asli (.xlsx)
 async function exportFormattedExcel() {
   const records = await getAllRecordsFromDB();
-  if (records.length === 0) {
-    showToast("Belum ada data transaksi untuk diekspor!");
+  if (!records || records.length === 0) {
+    alert("Belum ada data transaksi yang tersimpan di HP!\n\nSilakan isi formulir di tab 'Buat Kuitansi' dan klik tombol 'Simpan & Buat Kuitansi' terlebih dahulu.");
     return;
   }
 
-  showToast("Menyiapkan Laporan Rekap Excel...");
+  showToast("Menyiapkan File Excel Resmi (.xlsx)...");
   const st = getSettings();
-  const html = buildExcelHtml(records, st);
   const cleanTgl = new Date().toISOString().slice(0, 10);
-  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.xls`;
-  const mimeType = 'application/vnd.ms-excel';
+  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.xlsx`;
+  const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-  // 1. Android APK Native Bridge (Simpan ke Download & Buka Otomatis di HP)
+  let base64Content;
+  if (typeof XLSX !== 'undefined') {
+    base64Content = generateRealXlsxBase64(records, st);
+  } else {
+    const csv = generateCsvContent(records, st);
+    base64Content = btoa(unescape(encodeURIComponent(csv)));
+  }
+
+  // 1. Android APK Native Bridge
   const bridge = (window.AndroidBridge && typeof window.AndroidBridge.saveAndOpenFile === 'function')
     ? window.AndroidBridge
     : ((window.AndroidPrinter && typeof window.AndroidPrinter.saveAndOpenFile === 'function') ? window.AndroidPrinter : null);
 
   if (bridge) {
-    const base64Content = btoa(unescape(encodeURIComponent(html)));
     bridge.saveAndOpenFile(base64Content, fileName, mimeType);
-    showToast("✅ Membuka Laporan Rekap Excel di HP Anda...");
+    showToast("✅ Membuka File Excel di HP Anda...");
     return;
   }
 
   // 2. Fallback Standar Browser Web
-  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const byteChars = atob(base64Content);
+  const byteNums = new Array(byteChars.length);
+  for (let i = 0; i < byteChars.length; i++) {
+    byteNums[i] = byteChars.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNums);
+  const blob = new Blob([byteArray], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1226,39 +1465,90 @@ async function exportFormattedExcel() {
     URL.revokeObjectURL(url);
   }, 1500);
 
-  showToast("✅ Berhasil mengunduh Laporan Rekap Excel resmi!");
+  showToast("✅ Berhasil mengunduh File Excel (.xlsx)!");
 }
 
-// Bagikan File Excel (WhatsApp / Google Drive / Email)
+// Unduh File CSV Ringan (.csv)
+async function exportCsvOnly() {
+  const records = await getAllRecordsFromDB();
+  if (!records || records.length === 0) {
+    alert("Belum ada data transaksi!");
+    return;
+  }
+
+  showToast("Menyiapkan File CSV...");
+  const st = getSettings();
+  const csv = generateCsvContent(records, st);
+  const cleanTgl = new Date().toISOString().slice(0, 10);
+  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.csv`;
+  const mimeType = 'text/csv;charset=utf-8;';
+  const base64Content = btoa(unescape(encodeURIComponent(csv)));
+
+  const bridge = (window.AndroidBridge && typeof window.AndroidBridge.saveAndOpenFile === 'function')
+    ? window.AndroidBridge
+    : ((window.AndroidPrinter && typeof window.AndroidPrinter.saveAndOpenFile === 'function') ? window.AndroidPrinter : null);
+
+  if (bridge) {
+    bridge.saveAndOpenFile(base64Content, fileName, mimeType);
+    showToast("✅ Membuka file CSV di HP...");
+    return;
+  }
+
+  const blob = new Blob([csv], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 1500);
+
+  showToast("✅ Berhasil mengunduh File CSV!");
+}
+
+// Bagikan File Excel ke WhatsApp / Drive
 async function shareFormattedExcel() {
   const records = await getAllRecordsFromDB();
-  if (records.length === 0) {
-    showToast("Belum ada data transaksi kas desa untuk dibagikan!");
+  if (!records || records.length === 0) {
+    alert("Belum ada data transaksi kas desa untuk dibagikan!");
     return;
   }
 
   const st = getSettings();
-  const html = buildExcelHtml(records, st);
   const cleanTgl = new Date().toISOString().slice(0, 10);
-  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.xls`;
-  const mimeType = 'application/vnd.ms-excel';
+  const fileName = `Buku_Rekap_Kas_Desa_Tanjung_Manis_${cleanTgl}.xlsx`;
+  const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-  // 1. Android Native Share Sheet
+  let base64Content;
+  if (typeof XLSX !== 'undefined') {
+    base64Content = generateRealXlsxBase64(records, st);
+  } else {
+    const csv = generateCsvContent(records, st);
+    base64Content = btoa(unescape(encodeURIComponent(csv)));
+  }
+
   const bridge = (window.AndroidBridge && typeof window.AndroidBridge.shareFile === 'function')
     ? window.AndroidBridge
     : ((window.AndroidPrinter && typeof window.AndroidPrinter.shareFile === 'function') ? window.AndroidPrinter : null);
 
   if (bridge) {
-    const base64Content = btoa(unescape(encodeURIComponent(html)));
     bridge.shareFile(base64Content, fileName, mimeType);
     showToast("Membuka menu bagikan...");
     return;
   }
 
-  // 2. Fallback Web Share
   if (navigator.share) {
     try {
-      const file = new File([html], fileName, { type: mimeType });
+      const byteChars = atob(base64Content);
+      const byteNums = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNums[i] = byteChars.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNums);
+      const file = new File([byteArray], fileName, { type: mimeType });
       await navigator.share({
         title: 'Buku Rekap Kas Desa Tanjung Manis',
         text: 'Laporan Rekapitulasi Kas APBDes Tanjung Manis',
@@ -1268,7 +1558,6 @@ async function shareFormattedExcel() {
     } catch (e) {}
   }
 
-  // 3. Fallback Export
   exportFormattedExcel();
 }
 
