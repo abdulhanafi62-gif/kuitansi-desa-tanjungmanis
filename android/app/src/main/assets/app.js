@@ -668,6 +668,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnShareExcelAudit) {
     btnShareExcelAudit.addEventListener('click', shareFormattedExcel);
   }
+  const btnPrintRekapPdf = document.getElementById('btnPrintRekapPdf');
+  if (btnPrintRekapPdf) {
+    btnPrintRekapPdf.addEventListener('click', printRekapPdf);
+  }
 
   // Settings Save
   settingsForm.addEventListener('submit', (e) => {
@@ -1263,16 +1267,30 @@ function generateRealXlsxBase64(records, st) {
     groupPihak[p].total += (r.jumlahUang || 0);
   });
 
+  const borderThin = {
+    top: { style: 'thin', color: { rgb: '000000' } },
+    bottom: { style: 'thin', color: { rgb: '000000' } },
+    left: { style: 'thin', color: { rgb: '000000' } },
+    right: { style: 'thin', color: { rgb: '000000' } }
+  };
+
+  const borderDoubleTotal = {
+    top: { style: 'thin', color: { rgb: '000000' } },
+    bottom: { style: 'double', color: { rgb: '000000' } },
+    left: { style: 'thin', color: { rgb: '000000' } },
+    right: { style: 'thin', color: { rgb: '000000' } }
+  };
+
   // Sheet 1: BUKU KAS APBDES TANJUNG MANIS
   const ws1Data = [
-    ["PEMERINTAH KABUPATEN " + (st.kabupaten || 'KUTAI TIMUR').toUpperCase()],
-    ["KECAMATAN " + (st.kecamatan || 'SANGKULIRANG').toUpperCase()],
-    ["PEMERINTAH DESA " + (st.namaDesa || 'TANJUNG MANIS').toUpperCase()],
-    ["Alamat: " + (st.alamatDesa || '')],
-    [],
-    ["BUKU CATATAN KHUSUS & REKAPITULASI PENYERAHAN DANA KAS APBDES"],
-    ["Pegangan Akuntabilitas Kaur Keuangan - Dicetak pada: " + tglCetak + " WITA"],
-    [],
+    ["PEMERINTAH KABUPATEN " + (st.kabupaten || 'KUTAI TIMUR').toUpperCase(), "", "", "", "", "", "", "", "", "", "", ""],
+    ["KECAMATAN " + (st.kecamatan || 'SANGKULIRANG').toUpperCase(), "", "", "", "", "", "", "", "", "", "", ""],
+    ["PEMERINTAH DESA " + (st.namaDesa || 'TANJUNG MANIS').toUpperCase(), "", "", "", "", "", "", "", "", "", "", ""],
+    ["Alamat: " + (st.alamatDesa || ''), "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", ""],
+    ["BUKU CATATAN KHUSUS & REKAPITULASI PENYERAHAN DANA KAS APBDES", "", "", "", "", "", "", "", "", "", "", ""],
+    ["Pegangan Akuntabilitas Kaur Keuangan - Dicetak pada: " + tglCetak + " WITA", "", "", "", "", "", "", "", "", "", "", ""],
+    ["", "", "", "", "", "", "", "", "", "", "", ""],
     [
       "NO",
       "NO. BUKTI BAST",
@@ -1309,29 +1327,26 @@ function generateRealXlsxBase64(records, st) {
     ]);
   });
 
-  // Total Baris
-  ws1Data.push([]);
+  const totalRowIndex = ws1Data.length;
   ws1Data.push([
-    "", "", "", "", "", "", "",
-    "JUMLAH TOTAL SELURUH PENGELUARAN KAS:",
+    "JUMLAH TOTAL SELURUH PENGELUARAN KAS:", "", "", "", "", "", "", "",
     totalNominal,
-    '"' + konversiTerbilang(totalNominal) + '"',
-    "", ""
+    '"' + konversiTerbilang(totalNominal) + '"', "", ""
   ]);
 
-  // Kolom Tanda Tangan
-  ws1Data.push([]);
-  ws1Data.push([]);
+  // Signatures
+  ws1Data.push(["", "", "", "", "", "", "", "", "", "", "", ""]);
+  ws1Data.push(["", "", "", "", "", "", "", "", "", "", "", ""]);
   ws1Data.push([
-    "", "Mengetahui,", "", "", "", "", "", "Desa " + st.namaDesa + ", " + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+    "", "Mengetahui,", "", "", "", "", "", "Desa " + st.namaDesa + ", " + new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }), "", "", "", ""
   ]);
   ws1Data.push([
-    "", "Kepala Desa " + st.namaDesa, "", "", "", "", "", "Kaur Keuangan Desa " + st.namaDesa
+    "", "Kepala Desa " + st.namaDesa, "", "", "", "", "", "Kaur Keuangan Desa " + st.namaDesa, "", "", "", ""
   ]);
-  ws1Data.push([]);
-  ws1Data.push([]);
+  ws1Data.push(["", "", "", "", "", "", "", "", "", "", "", ""]);
+  ws1Data.push(["", "", "", "", "", "", "", "", "", "", "", ""]);
   ws1Data.push([
-    "", "( " + (st.kadesNamaDefault || 'Asmail') + " )", "", "", "", "", "", "( " + (st.namaKaur || 'Kaur Keuangan') + " )"
+    "", "( " + (st.kadesNamaDefault || 'Asmail') + " )", "", "", "", "", "", "( " + (st.namaKaur || 'Kaur Keuangan') + " )", "", "", "", ""
   ]);
 
   const wb = XLSX.utils.book_new();
@@ -1346,20 +1361,139 @@ function generateRealXlsxBase64(records, st) {
     { wch: 20 },
     { wch: 25 },
     { wch: 35 },
-    { wch: 20 },
+    { wch: 22 },
     { wch: 30 },
     { wch: 40 },
     { wch: 28 }
   ];
 
+  ws1['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 11 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 11 } },
+    { s: { r: 3, c: 0 }, e: { r: 3, c: 11 } },
+    { s: { r: 5, c: 0 }, e: { r: 5, c: 11 } },
+    { s: { r: 6, c: 0 }, e: { r: 6, c: 11 } },
+    { s: { r: totalRowIndex, c: 0 }, e: { r: totalRowIndex, c: 7 } },
+    { s: { r: totalRowIndex, c: 9 }, e: { r: totalRowIndex, c: 11 } }
+  ];
+
+  function getCell(ws, r, c) {
+    const ref = XLSX.utils.encode_cell({ r, c });
+    if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+    return ws[ref];
+  }
+
+  // 1. Style Kop Surat (r=0..3)
+  getCell(ws1, 0, 0).s = { font: { name: 'Calibri', sz: 12, bold: true, color: { rgb: '0F172A' } }, alignment: { horizontal: 'center' } };
+  getCell(ws1, 1, 0).s = { font: { name: 'Calibri', sz: 12, bold: true, color: { rgb: '0F172A' } }, alignment: { horizontal: 'center' } };
+  getCell(ws1, 2, 0).s = { font: { name: 'Calibri', sz: 15, bold: true, color: { rgb: '1E3A8A' } }, alignment: { horizontal: 'center' } };
+  getCell(ws1, 3, 0).s = { font: { name: 'Calibri', sz: 10, italic: true, color: { rgb: '475569' } }, alignment: { horizontal: 'center' } };
+
+  // 2. Style Judul Dokumen (r=5..6)
+  for (let c = 0; c < 12; c++) {
+    getCell(ws1, 5, c).s = {
+      fill: { fgColor: { rgb: 'F1F5F9' } },
+      font: { name: 'Calibri', sz: 12, bold: true, color: { rgb: '0F172A' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: borderThin
+    };
+  }
+  getCell(ws1, 6, 0).s = { font: { name: 'Calibri', sz: 9.5, italic: true, color: { rgb: '64748B' } }, alignment: { horizontal: 'center' } };
+
+  // 3. Style Table Headers (r=8) - ALL BORDERS + BLUE BACKGROUND + WHITE TEXT
+  for (let c = 0; c < 12; c++) {
+    getCell(ws1, 8, c).s = {
+      fill: { fgColor: { rgb: '1E3A8A' } },
+      font: { name: 'Calibri', sz: 10, bold: true, color: { rgb: 'FFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: borderThin
+    };
+  }
+
+  // 4. Style Data Rows (r=9 .. 9 + records.length - 1) - ALL BORDERS
+  for (let i = 0; i < records.length; i++) {
+    const rIdx = 9 + i;
+    const isZebra = (i % 2 === 1);
+    const bgZebra = isZebra ? { rgb: 'F8FAFC' } : { rgb: 'FFFFFF' };
+
+    for (let c = 0; c < 12; c++) {
+      const cell = getCell(ws1, rIdx, c);
+      let align = { vertical: 'top', wrapText: true };
+      let font = { name: 'Calibri', sz: 10, color: { rgb: '0F172A' } };
+      let fill = { fgColor: bgZebra };
+      let numFmt = undefined;
+
+      if (c === 0) { // NO
+        align.horizontal = 'center';
+      } else if (c === 1) { // NO BUKTI
+        align.horizontal = 'center';
+        font.bold = true;
+        font.name = 'Consolas';
+        font.color = { rgb: '1E3A8A' };
+      } else if (c === 2) { // TANGGAL
+        align.horizontal = 'center';
+      } else if (c === 3 || c === 4) { // JABATAN / NAMA
+        font.bold = true;
+      } else if (c === 8) { // NOMINAL
+        align.horizontal = 'right';
+        font.bold = true;
+        font.color = { rgb: '047857' };
+        numFmt = '#,##0';
+      } else if (c === 10) { // CATATAN KAUR
+        fill = { fgColor: { rgb: 'FFFBEB' } };
+        font.italic = true;
+        font.color = { rgb: '92400E' };
+      } else if (c === 11) { // SEGEL FORENSIK
+        align.horizontal = 'center';
+        font.name = 'Consolas';
+        font.sz = 9;
+        font.color = { rgb: '059669' };
+      }
+
+      cell.s = { font, alignment: align, fill, border: borderThin, numFmt };
+    }
+  }
+
+  // 5. Style Total Row - DOUBLE LINE BORDER + LIGHT BLUE FILL
+  for (let c = 0; c < 12; c++) {
+    const cell = getCell(ws1, totalRowIndex, c);
+    let align = { vertical: 'center' };
+    let font = { name: 'Calibri', sz: 11, bold: true, color: { rgb: '0F172A' } };
+    let numFmt = undefined;
+
+    if (c <= 7) {
+      align.horizontal = 'right';
+    } else if (c === 8) {
+      align.horizontal = 'right';
+      font.sz = 12;
+      numFmt = '#,##0';
+    } else {
+      align.horizontal = 'left';
+      align.wrapText = true;
+      font.italic = true;
+      font.color = { rgb: '1E3A8A' };
+    }
+
+    cell.s = {
+      fill: { fgColor: { rgb: 'DBEAFE' } },
+      font,
+      alignment: align,
+      border: borderDoubleTotal,
+      numFmt
+    };
+  }
+
   XLSX.utils.book_append_sheet(wb, ws1, "Buku Kas APBDes");
 
-  // Sheet 2: REKAPITULASI TOTAL PER PIHAK PENERIMA
+  // ==========================================
+  // SHEET 2: REKAP PER PENERIMA
+  // ==========================================
   const ws2Data = [
-    ["PEMERINTAH DESA " + (st.namaDesa || 'TANJUNG MANIS').toUpperCase()],
-    ["REKAPITULASI TOTAL PENGELUARAN PER PIHAK PENERIMA"],
-    ["Dicetak pada: " + tglCetak + " WITA"],
-    [],
+    ["PEMERINTAH DESA " + (st.namaDesa || 'TANJUNG MANIS').toUpperCase(), "", ""],
+    ["REKAPITULASI TOTAL PENGELUARAN PER PIHAK PENERIMA", "", ""],
+    ["Dicetak pada: " + tglCetak + " WITA", "", ""],
+    ["", "", ""],
     ["PIHAK / JABATAN PENERIMA", "FREKUENSI PENYERAHAN", "TOTAL DANA DISERAHKAN (RP)"]
   ];
 
@@ -1371,6 +1505,7 @@ function generateRealXlsxBase64(records, st) {
     ]);
   });
 
+  const total2Idx = ws2Data.length;
   ws2Data.push([
     "TOTAL SELURUHNYA",
     records.length + " Transaksi",
@@ -1379,6 +1514,45 @@ function generateRealXlsxBase64(records, st) {
 
   const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
   ws2['!cols'] = [{ wch: 32 }, { wch: 25 }, { wch: 28 }];
+  ws2['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 2 } }
+  ];
+
+  // Style Header Sheet 2 (r=4)
+  for (let c = 0; c < 3; c++) {
+    getCell(ws2, 4, c).s = {
+      fill: { fgColor: { rgb: '059669' } },
+      font: { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: 'FFFFFF' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: borderThin
+    };
+  }
+
+  // Style Data Sheet 2
+  for (let i = 5; i < total2Idx; i++) {
+    getCell(ws2, i, 0).s = { font: { name: 'Calibri', sz: 10.5, bold: true }, alignment: { vertical: 'center' }, border: borderThin };
+    getCell(ws2, i, 1).s = { font: { name: 'Calibri', sz: 10 }, alignment: { horizontal: 'center', vertical: 'center' }, border: borderThin };
+    getCell(ws2, i, 2).s = { font: { name: 'Calibri', sz: 10.5, bold: true, color: { rgb: '047857' } }, alignment: { horizontal: 'right', vertical: 'center' }, border: borderThin, numFmt: '#,##0' };
+  }
+
+  // Style Total Sheet 2
+  for (let c = 0; c < 3; c++) {
+    const cell = getCell(ws2, total2Idx, c);
+    let align = { vertical: 'center' };
+    if (c === 0) align.horizontal = 'right';
+    if (c === 1) align.horizontal = 'center';
+    if (c === 2) align.horizontal = 'right';
+    cell.s = {
+      fill: { fgColor: { rgb: 'DBEAFE' } },
+      font: { name: 'Calibri', sz: 11, bold: true },
+      alignment: align,
+      border: borderDoubleTotal,
+      numFmt: c === 2 ? '#,##0' : undefined
+    };
+  }
+
   XLSX.utils.book_append_sheet(wb, ws2, "Rekap per Penerima");
 
   return XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
@@ -1559,6 +1733,45 @@ async function shareFormattedExcel() {
   }
 
   exportFormattedExcel();
+}
+
+// Cetak / Simpan Rekapitulasi ke PDF
+async function printRekapPdf() {
+  const records = await getAllRecordsFromDB();
+  if (!records || records.length === 0) {
+    alert("Belum ada data transaksi yang tersimpan di HP!");
+    return;
+  }
+  const st = getSettings();
+  const html = buildExcelHtml(records, st);
+
+  const printFrame = document.createElement('iframe');
+  printFrame.style.position = 'fixed';
+  printFrame.style.right = '0';
+  printFrame.style.bottom = '0';
+  printFrame.style.width = '0';
+  printFrame.style.height = '0';
+  printFrame.style.border = '0';
+  document.body.appendChild(printFrame);
+
+  const doc = printFrame.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  setTimeout(() => {
+    try {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+    } catch (e) {
+      if (window.AndroidPrinter && window.AndroidPrinter.printDocument) {
+        window.AndroidPrinter.printDocument("Buku_Rekap_Kas_Desa");
+      }
+    }
+    setTimeout(() => {
+      try { document.body.removeChild(printFrame); } catch (e) {}
+    }, 2500);
+  }, 400);
 }
 
 // Alias for backwards compatibility
